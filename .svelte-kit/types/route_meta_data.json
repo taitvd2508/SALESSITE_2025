@@ -14,6 +14,12 @@
 	"/(admin)/admin/roles": [],
 	"/(admin)/admin/users": [],
 	"/(admin)/admin/users/[id]": [],
+	"/api/events": [
+		"src/routes/api/events/+server.ts"
+	],
+	"/api/recommendations": [
+		"src/routes/api/recommendations/+server.ts"
+	],
 	"/(site)/auth/forgot": [],
 	"/(site)/auth/login": [],
 	"/(site)/auth/register": [],
@@ -21,5 +27,10 @@
 	"/(site)/checkout": [],
 	"/(site)/contact": [],
 	"/(site)/products": [],
-	"/(site)/products/[id]": []
+	"/(site)/products/[id]": [
+		"src/routes/(site)/products/[id]/+page.server.ts"
+	],
+	"/test-products": [
+		"src/routes/test-products/+page.server.ts"
+	]
 }

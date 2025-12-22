@@ -26,7 +26,8 @@ export const nodes = [
 	() => import('./nodes/22'),
 	() => import('./nodes/23'),
 	() => import('./nodes/24'),
-	() => import('./nodes/25')
+	() => import('./nodes/25'),
+	() => import('./nodes/26')
 ];
 
 export const server_loads = [];
@@ -53,7 +54,8 @@ export const dictionary = {
 		"/(site)/checkout": [22,[3]],
 		"/(site)/contact": [23,[3]],
 		"/(site)/products": [24,[3]],
-		"/(site)/products/[id]": [25,[3]]
+		"/(site)/products/[id]": [~25,[3]],
+		"/test-products": [~26]
 	};
 
 export const hooks = {

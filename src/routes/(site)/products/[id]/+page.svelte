@@ -1,3 +1,42 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { get } from 'svelte/store';
+
+  export let data;
+  let forYou: any[] = [];
+
+  onMount(async () => {
+    const idStr = get(page).params.id;
+    const productId = Number(idStr);
+    if (!Number.isFinite(productId)) return;
+
+    // (A) GHI EVENT VIEW_PRODUCT
+    const key = `viewed_${productId}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'view_product',
+          product_id: productId
+        })
+      });
+    }
+
+    // (B) LẤY GỢI Ý CÁ NHÂN HOÁ
+    const res = await fetch(`/api/recommendations?current=${productId}`);
+    const js = await res.json();
+    if (js?.ok) forYou = js.forYou ?? [];
+  });
+</script>
+{#if data.productError}
+  <p style="color:red">Lỗi load sản phẩm: {data.productError}</p>
+{/if}
+
+
 <svelte:head>
   <title>Chi tiết sản phẩm TT STORE</title>
 </svelte:head>
@@ -258,4 +297,44 @@
 </div>
 </div>
 </div>
+<hr />
+
+<h2>Gợi ý cho bạn</h2>
+
+{#if data.similarProducts?.length > 0}
+  <h3>Sản phẩm liên quan</h3>
+  <ul>
+    {#each data.similarProducts as p}
+      <li>
+        <a href={`/products/${p.id}`}>{p.name}</a> — {p.price} đ
+      </li>
+    {/each}
+  </ul>
+{:else}
+  <p>Chưa có đủ dữ liệu mua chung để gợi ý liên quan.</p>
+{/if}
+
+{#if data.trendingProducts?.length > 0}
+  <h3>Đang thịnh hành</h3>
+  <ul>
+    {#each data.trendingProducts as p}
+      <li>
+        <a href={`/products/${p.id}`}>{p.name}</a> — {p.price} đ
+      </li>
+    {/each}
+  </ul>
+{/if}
+
+{#if forYou.length > 0}
+  <h3>Dành cho bạn (dựa trên sản phẩm bạn vừa xem)</h3>
+  <ul>
+    {#each forYou as p}
+      <li>
+        <a href={`/products/${p.id}`}>{p.name}</a> — {p.price} đ
+      </li>
+    {/each}
+  </ul>
+{:else}
+  <p>(Chưa đủ hành vi xem để cá nhân hoá — sẽ dùng Trending/Related)</p>
+{/if}
 </main>
