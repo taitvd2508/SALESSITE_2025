@@ -1,0 +1,20 @@
+import type * as Kit from '@sveltejs/kit';
+
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+// @ts-ignore
+type MatcherParam<M> = M extends (param : string) => param is infer U ? U extends string ? U : string : string;
+type RouteParams = {  };
+type RouteId = '/';
+type MaybeWithVoid<T> = {} extends T ? T | void : T;
+export type RequiredKeys<T> = { [K in keyof T]-?: {} extends { [P in K]: T[K] } ? never : K; }[keyof T];
+type OutputDataShape<T> = MaybeWithVoid<Omit<App.PageData, RequiredKeys<T>> & Partial<Pick<App.PageData, keyof T & keyof App.PageData>> & Record<string, any>>
+type EnsureDefined<T> = T extends null | undefined ? {} : T;
+type OptionalUnion<U extends Record<string, any>, A extends keyof U = U extends U ? keyof U : never> = U extends unknown ? { [P in Exclude<A, keyof U>]?: never } & U : never;
+export type Snapshot<T = any> = Kit.Snapshot<T>;
+type LayoutRouteId = RouteId | "/(admin)/admin" | "/(admin)/admin/orders" | "/(admin)/admin/orders/[id]" | "/(admin)/admin/orders/[id]/manage" | "/(admin)/admin/products" | "/(admin)/admin/products/[id]" | "/(admin)/admin/roles" | "/(admin)/admin/users" | "/(admin)/admin/users/[id]" | "/(site)" | "/(site)/about" | "/(site)/account" | "/(site)/account/change-password" | "/(site)/account/orders" | "/(site)/auth/forgot" | "/(site)/auth/login" | "/(site)/auth/register" | "/(site)/cart" | "/(site)/checkout" | "/(site)/contact" | "/(site)/products" | "/(site)/products/[slug]" | "/test-products" | null
+type LayoutParams = RouteParams & { id?: string; slug?: string }
+type LayoutParentData = EnsureDefined<{}>;
+
+export type LayoutServerData = null;
+export type LayoutData = Expand<LayoutParentData>;
+export type LayoutProps = { params: LayoutParams; data: LayoutData; children: import("svelte").Snippet }
