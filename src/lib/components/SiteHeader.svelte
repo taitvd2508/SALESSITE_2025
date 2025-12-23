@@ -1,5 +1,6 @@
 <script>
   import { page } from "$app/stores";
+  import { cart, cartTotals } from '$lib/stores/cart';
 
   // Mega menu data
   const menu = [
@@ -137,6 +138,8 @@
   function onKeyDown(e) {
     if (e.key === "Escape") closeNow();
   }
+
+  $: count = cartTotals($cart.items).count;
 </script>
 
 <!-- Header row 1: KHÔNG sticky -->
@@ -244,11 +247,11 @@
         class="relative flex size-10 items-center justify-center rounded-lg bg-[#232f48] hover:bg-primary transition-colors text-white"
       >
         <span class="material-symbols-outlined">shopping_bag</span>
-        <span
-          class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-[11px] leading-[18px] text-white text-center"
-        >
-          2
-        </span>
+        {#if count > 0}
+          <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-[11px] leading-[18px] text-white text-center">
+            {count}
+          </span>
+        {/if}
       </a>
     </div>
   </div>

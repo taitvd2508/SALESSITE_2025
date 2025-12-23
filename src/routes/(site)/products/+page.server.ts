@@ -6,7 +6,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const q = (url.searchParams.get('q') ?? '').trim();
 	const type = url.searchParams.get('type') ?? '';
 	const brand = url.searchParams.get('brand') ?? '';
-	const sort = (url.searchParams.get('sort') ?? 'newest') as SortKey;
+	//const sort = (url.searchParams.get('sort') ?? 'newest') as SortKey;
+	const sortRaw = url.searchParams.get('sort') ?? 'newest';
+	const sort: SortKey = (sortRaw === 'price_asc' || sortRaw === 'price_desc' || sortRaw === 'newest') ? sortRaw : 'newest';
 
 	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 	const pageSize = 12;
@@ -21,9 +23,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 	let query = supabase
 		.from('products')
-		.select('id,slug,name,brand,type,price,quantity,description,images,active,created_at', {
-			count: 'exact'
-		})
+		.select('id,slug,name,brand,type,price,old_price,quantity,images,created_at', { count: 'exact' })
 		.eq('active', true);
 
 	// Search
@@ -48,8 +48,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	if (error) throw new Error(error.message);
 
 	// Facets
-	const { data: typesData } = await supabase.from('products').select('type').eq('active', true);
-	const { data: brandsData } = await supabase.from('products').select('brand').eq('active', true);
+	const { data: typesData } = await supabase.from('products').select('type').eq('active', true).limit(1000);
+	const { data: brandsData } = await supabase.from('products').select('brand').eq('active', true).limit(1000);
 
 	const types = Array.from(new Set((typesData ?? []).map((x) => x.type).filter(Boolean))).sort();
 	const brands = Array.from(new Set((brandsData ?? []).map((x) => x.brand).filter(Boolean))).sort();

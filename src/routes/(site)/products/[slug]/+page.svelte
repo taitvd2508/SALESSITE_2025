@@ -1,6 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { cart } from '$lib/stores/cart';
   export let data: any;
+  let toast = '';
+	let toastTimer: any;
+
+	function showToast(msg: string) {
+  		toast = msg;
+  		clearTimeout(toastTimer);
+  		toastTimer = setTimeout(() => (toast = ''), 1200);
+	}
 
   let forYou: any[] = [];
 
@@ -60,6 +69,48 @@
     const js = await res.json();
     if (js?.ok) forYou = js.forYou ?? [];
   });
+
+  function toCartItem(p: any) {
+    return {
+      product_id: Number(p.id),
+      slug: p.slug,
+      name: p.name,
+      price: Number(p.price),
+      old_price: p.old_price ? Number(p.old_price) : null,
+      image: p.images?.[0] ?? null
+    };
+  }
+
+  // add đúng sản phẩm đang xem
+  async function addToCart() {
+    const p = data?.product;
+    if (!p) return;
+
+    cart.add(toCartItem(p), 1);
+
+    await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: 'add_to_cart', product_id: Number(p.id) })
+    });
+
+    showToast('Đã thêm vào giỏ');
+  }
+
+  // ✅ add đúng sản phẩm card (forYou/trending/similar)
+  async function addCardToCart(p: any) {
+    if (!p?.id) return;
+
+    cart.add(toCartItem(p), 1);
+
+    await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: 'add_to_cart', product_id: Number(p.id) })
+    });
+
+    showToast('Đã thêm vào giỏ');
+  }
 </script>
 
 {#if data.productError}
@@ -204,7 +255,7 @@
               </button>
             </div>
 
-            <button class="flex-1 h-12 rounded-lg border border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2" disabled={quantity <= 0}>
+            <button class="flex-1 h-12 rounded-lg border border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2" on:click={addToCart} disabled={quantity <= 0}>
               <span class="material-symbols-outlined">add_shopping_cart</span>
               Thêm vào giỏ
             </button>
@@ -303,7 +354,8 @@
             <div class="w-full aspect-square bg-surface-dark rounded-lg flex items-center justify-center overflow-hidden relative">
               <div class="w-full h-full bg-center bg-contain bg-no-repeat group-hover:scale-105 transition-transform duration-500"
                    style={`background-image: url('${coverOf(p)}');`} />
-              <button class="absolute bottom-3 right-3 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" type="button" on:click|preventDefault={() => {}}>
+              <button class="absolute bottom-3 right-3 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" type="button" 
+                on:click|preventDefault|stopPropagation={() => addCardToCart(p)}>
                 <span class="material-symbols-outlined text-sm">add</span>
               </button>
             </div>
@@ -342,7 +394,8 @@
             <div class="w-full aspect-square bg-surface-dark rounded-lg flex items-center justify-center overflow-hidden relative">
               <div class="w-full h-full bg-center bg-contain bg-no-repeat group-hover:scale-105 transition-transform duration-500"
                    style={`background-image: url('${coverOf(p)}');`} />
-              <button class="absolute bottom-3 right-3 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" type="button" on:click|preventDefault={() => {}}>
+              <button class="absolute bottom-3 right-3 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" type="button" 
+                on:click|preventDefault|stopPropagation={() => addCardToCart(p)}>
                 <span class="material-symbols-outlined text-sm">add</span>
               </button>
             </div>
@@ -365,4 +418,9 @@
       </div>
     {/if}
   </div>
+  {#if toast}
+  		<div class="fixed top-3 right-24 z-[99999] bg-[#101622] border bg-primary/90 text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in">
+    		{toast}
+  		</div>
+	{/if}
 </main>
