@@ -1,5 +1,36 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { cart } from '$lib/stores/cart';
+	let toast = '';
+	let toastTimer: any;
+
+	function showToast(msg: string) {
+  		toast = msg;
+  		clearTimeout(toastTimer);
+  		toastTimer = setTimeout(() => (toast = ''), 1200);
+	}
+
+	async function addProductToCart(p: any) {
+  		cart.add({
+      		product_id: Number(p.id),
+      		slug: p.slug,
+      		name: p.name,
+      		price: Number(p.price),
+      		old_price: p.old_price ? Number(p.old_price) : null,
+      		image: p.images?.[0] ?? null
+    		},
+    		1
+  		);
+
+  		// ghi event add_to_cart để trending tính điểm
+  		await fetch('/api/events', {
+    		method: 'POST',
+    		headers: { 'Content-Type': 'application/json' },
+    		body: JSON.stringify({ event_type: 'add_to_cart', product_id: Number(p.id) })
+  		});
+
+		showToast('Đã thêm vào giỏ');
+	}
 
 	export let data: {
 		products: Array<{
@@ -292,15 +323,22 @@
 									{p.name}
 								</h3>
 
-								<div class="mt-auto pt-4 flex items-end justify-between">
-									<p class="text-white font-black text-xl">{formatVND(p.price)}</p>
+								<div class="mt-auto pt-4 flex items-center justify-between gap-3">
+									<!-- Price block -->
+									<div class="flex flex-col">
+										<p class="text-white font-black text-xl">{formatVND(p.price)}</p>
+										{#if p.old_price && Number(p.old_price) > Number(p.price ?? 0)}
+											<div class="flex items-center gap-2">
+    											<span class="text-xs text-[#92a4c9] line-through">{formatVND(p.old_price)}</span>
+												<span class="text-xs font-bold text-primary">-{Math.round(((Number(p.old_price) - Number(p.price)) / Number(p.old_price)) * 100)}%</span>
+											</div>
+  										{/if}
+									</div>
+									<!-- Add to cart -->
 									<button
 										type="button"
-										on:click|preventDefault={() => {
-											// TODO: add to cart
-										}}
-										class="h-10 w-10 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all shadow-lg shadow-blue-900/20"
-									>
+										on:click|preventDefault|stopPropagation={() => addProductToCart(p)}
+										class="h-10 w-10 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-blue-600 active:scale-95 transition-all shadow-lg shadow-blue-900/20">
 										<span class="material-symbols-outlined">add_shopping_cart</span>
 									</button>
 								</div>
@@ -345,4 +383,9 @@
 			{/if}
 		</div>
 	</div>
+	{#if toast}
+  		<div class="fixed top-3 right-24 z-[99999] bg-[#101622] border bg-primary/90 text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in">
+    		{toast}
+  		</div>
+	{/if}
 </main>
