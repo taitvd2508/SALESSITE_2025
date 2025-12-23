@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# env
+.env
+.env.*
+
+# SvelteKit
+.svelte-kit/
+.build/
+dist/
+
+# logs
+*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# local tooling caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.eslintcache
+.vite/
+coverage/
+
+# local database / seeds (nếu có)
+*.sqlite
+*.sqlite3
+*.db
+
+# Supabase local (nếu bạn dùng supabase cli)
+supabase/.temp/
+supabase/.branches/
