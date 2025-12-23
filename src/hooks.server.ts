@@ -1,8 +1,10 @@
 import type { Handle } from '@sveltejs/kit';
 import { randomUUID } from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 export const handle: Handle = async ({ event, resolve }) => {
-  // cookie name để tracking hành vi
+  // 1) cookie name để tracking hành vi
   const cookieName = 'tt_sid';
 
   // nếu chưa có cookie => tạo mới
@@ -13,10 +15,21 @@ export const handle: Handle = async ({ event, resolve }) => {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // dev local. Khi deploy HTTPS => đổi true
-      maxAge: 60 * 60 * 24 * 30 // 30 ngày
+      secure: false, // deploy https => true
+      maxAge: 60 * 60 * 24 * 30
     });
   }
+
+  // 2) attach supabase client vào locals (anon key)
+  event.locals.supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,  // server-side: không lưu session
+      autoRefreshToken: false
+    }
+  });
+
+  // 3) nếu bạn muốn tiện dùng sid ở mọi nơi
+  event.locals.tt_sid = sid;
 
   return resolve(event);
 };

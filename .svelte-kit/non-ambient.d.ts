@@ -27,18 +27,18 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/(site)" | "/(admin)" | "/" | "/(site)/about" | "/(site)/account" | "/(site)/account/change-password" | "/(site)/account/orders" | "/(admin)/admin" | "/(admin)/admin/orders" | "/(admin)/admin/orders/[id]" | "/(admin)/admin/orders/[id]/manage" | "/(admin)/admin/products" | "/(admin)/admin/products/[id]" | "/(admin)/admin/roles" | "/(admin)/admin/users" | "/(admin)/admin/users/[id]" | "/api" | "/api/events" | "/api/recommendations" | "/(site)/auth" | "/(site)/auth/forgot" | "/(site)/auth/login" | "/(site)/auth/register" | "/(site)/cart" | "/(site)/checkout" | "/(site)/contact" | "/(site)/products" | "/(site)/products/[id]" | "/test-products";
+		RouteId(): "/(site)" | "/(admin)" | "/" | "/(site)/about" | "/(site)/account" | "/(site)/account/change-password" | "/(site)/account/orders" | "/(admin)/admin" | "/(admin)/admin/orders" | "/(admin)/admin/orders/[id]" | "/(admin)/admin/orders/[id]/manage" | "/(admin)/admin/products" | "/(admin)/admin/products/[id]" | "/(admin)/admin/roles" | "/(admin)/admin/users" | "/(admin)/admin/users/[id]" | "/api" | "/api/events" | "/api/recommendations" | "/(site)/auth" | "/(site)/auth/forgot" | "/(site)/auth/login" | "/(site)/auth/register" | "/(site)/cart" | "/(site)/checkout" | "/(site)/contact" | "/(site)/products" | "/(site)/products/[slug]" | "/test-products";
 		RouteParams(): {
 			"/(admin)/admin/orders/[id]": { id: string };
 			"/(admin)/admin/orders/[id]/manage": { id: string };
 			"/(admin)/admin/products/[id]": { id: string };
 			"/(admin)/admin/users/[id]": { id: string };
-			"/(site)/products/[id]": { id: string }
+			"/(site)/products/[slug]": { slug: string }
 		};
 		LayoutParams(): {
-			"/(site)": { id?: string };
+			"/(site)": { slug?: string };
 			"/(admin)": { id?: string };
-			"/": { id?: string };
+			"/": { id?: string; slug?: string };
 			"/(site)/about": Record<string, never>;
 			"/(site)/account": Record<string, never>;
 			"/(site)/account/change-password": Record<string, never>;
@@ -62,12 +62,12 @@ declare module "$app/types" {
 			"/(site)/cart": Record<string, never>;
 			"/(site)/checkout": Record<string, never>;
 			"/(site)/contact": Record<string, never>;
-			"/(site)/products": { id?: string };
-			"/(site)/products/[id]": { id: string };
+			"/(site)/products": { slug?: string };
+			"/(site)/products/[slug]": { slug: string };
 			"/test-products": Record<string, never>
 		};
 		Pathname(): "/" | "/about" | "/about/" | "/account" | "/account/" | "/account/change-password" | "/account/change-password/" | "/account/orders" | "/account/orders/" | "/admin" | "/admin/" | "/admin/orders" | "/admin/orders/" | `/admin/orders/${string}` & {} | `/admin/orders/${string}/` & {} | `/admin/orders/${string}/manage` & {} | `/admin/orders/${string}/manage/` & {} | "/admin/products" | "/admin/products/" | `/admin/products/${string}` & {} | `/admin/products/${string}/` & {} | "/admin/roles" | "/admin/roles/" | "/admin/users" | "/admin/users/" | `/admin/users/${string}` & {} | `/admin/users/${string}/` & {} | "/api" | "/api/" | "/api/events" | "/api/events/" | "/api/recommendations" | "/api/recommendations/" | "/auth" | "/auth/" | "/auth/forgot" | "/auth/forgot/" | "/auth/login" | "/auth/login/" | "/auth/register" | "/auth/register/" | "/cart" | "/cart/" | "/checkout" | "/checkout/" | "/contact" | "/contact/" | "/products" | "/products/" | `/products/${string}` & {} | `/products/${string}/` & {} | "/test-products" | "/test-products/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): string & {};
+		Asset(): "/images/placeholder-product.png" | string & {};
 	}
 }

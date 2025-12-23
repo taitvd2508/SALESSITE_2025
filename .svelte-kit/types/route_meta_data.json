@@ -26,9 +26,11 @@
 	"/(site)/cart": [],
 	"/(site)/checkout": [],
 	"/(site)/contact": [],
-	"/(site)/products": [],
-	"/(site)/products/[id]": [
-		"src/routes/(site)/products/[id]/+page.server.ts"
+	"/(site)/products": [
+		"src/routes/(site)/products/+page.server.ts"
+	],
+	"/(site)/products/[slug]": [
+		"src/routes/(site)/products/[slug]/+page.server.ts"
 	],
 	"/test-products": [
 		"src/routes/test-products/+page.server.ts"

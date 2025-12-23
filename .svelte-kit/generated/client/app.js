@@ -53,8 +53,8 @@ export const dictionary = {
 		"/(site)/cart": [21,[3]],
 		"/(site)/checkout": [22,[3]],
 		"/(site)/contact": [23,[3]],
-		"/(site)/products": [24,[3]],
-		"/(site)/products/[id]": [~25,[3]],
+		"/(site)/products": [~24,[3]],
+		"/(site)/products/[slug]": [~25,[3]],
 		"/test-products": [~26]
 	};
 

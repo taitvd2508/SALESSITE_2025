@@ -133,49 +133,30 @@
 <h2 class="text-white text-3xl lg:text-4xl font-black leading-tight tracking-[-0.02em]">
                         Đội ngũ điều hành
                     </h2>
-<p class="text-text-secondary text-lg max-w-[600px]">
+<p class="text-text-secondary max-w-[600px]">
                         Những con người đam mê công nghệ đứng sau sự thành công của TT STORE.
                     </p>
 </div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!--<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">-->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 <!-- Team Member 1 -->
 <div class="flex flex-col gap-4 group">
 <div class="w-full aspect-[3/4] rounded-xl overflow-hidden bg-card-dark relative">
 <img alt="Portrait of a male executive in a suit" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Portrait of a male executive in a suit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlJEFqFyr79Y84pXTf1OS52qezwI_bB3Lkbc_ATmNpx4pElQZRCEeOwA2kkLMYOngj_am-pAucdmznXjrRoFgQ-r3unEqMjL4kjWFqPM45Pfx1ZmNMx0IG_JwTpcw9ZSmTwcPeSKotGts-XHAmsVGSIk2_R6Rx1IaQE8pfRHPbkDGOaUFYNYhbzOUxEq_hBdxUyw9jLz-jQFahlRFWL5GU_SuSKoDMTUJrqGGGu_xfBhwfBeQHkepJ0FQ6zSco4o3LpenMgSweeA"/>
 </div>
 <div>
-<h3 class="text-white font-bold text-lg">Trần Minh Tuấn</h3>
+<h3 class="text-white font-bold text-lg">Trịnh Võ Đức Tài</h3>
 <p class="text-primary font-medium text-sm">Founder &amp; CEO</p>
 </div>
 </div>
 <!-- Team Member 2 -->
 <div class="flex flex-col gap-4 group">
 <div class="w-full aspect-[3/4] rounded-xl overflow-hidden bg-card-dark relative">
-<img alt="Portrait of a female business professional" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Portrait of a female business professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx-OAWPTJef9McBOq80AlsEoDLewOZRYYfMiUrtJsb9J1cwpsjIjuC_idevaDLhcyMOEcdh_eWBDELKvVKolHzOXJ_Z9NthSTXFHQbUUNb_TvBGY8bTdvtBZ_I9DYLT9Jqy37z22-1ULJ2hL6Wiin4dArAcax3bbhGq0ZcCHTxA_jO4DSODMANqt-qF0Xnb27eWjTQdxWVpjdGeVzUFDtFVuzEl5e6Lp5JzGuqRCatIeuKuN4CQVNRIupdjqwAeiu-l1pPuetzAg"/>
-</div>
-<div>
-<h3 class="text-white font-bold text-lg">Nguyễn Thị Lan</h3>
-<p class="text-text-secondary font-medium text-sm">Head of Marketing</p>
-</div>
-</div>
-<!-- Team Member 3 -->
-<div class="flex flex-col gap-4 group">
-<div class="w-full aspect-[3/4] rounded-xl overflow-hidden bg-card-dark relative">
 <img alt="Portrait of a male creative director" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Portrait of a male creative director" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2h5S0ESN4Fyn5E5DzoLi-Aq99X0VhnOIHQw1iClM2CxTc_1NJHeuQuUkuKGxk56qpA3mPZvaTehka0NicQAqxlWwHdl-tbtLN9qzt4QyqmT0Jp_fjHnrWGgLSyXzPhMbZFRGtLq1GCy4WZE-1KZdkmYXdr15s7tzBWs4kSZL0iH2Bif-6E3_CfXSGiebYKaC6sSiadXAnBsUrvo65UOAWeyl3S7SJh6Cb4KlPZZ8bax_ctLGShdINML9FaaxpTNfiRb7fK7kaoA"/>
 </div>
 <div>
-<h3 class="text-white font-bold text-lg">Lê Văn Hùng</h3>
-<p class="text-text-secondary font-medium text-sm">Product Manager</p>
-</div>
-</div>
-<!-- Team Member 4 -->
-<div class="flex flex-col gap-4 group">
-<div class="w-full aspect-[3/4] rounded-xl overflow-hidden bg-card-dark relative">
-<img alt="Portrait of a female customer support lead" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="Portrait of a female customer support lead" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP9pyKEcK-nA90gWpqPbrzXEB9aWciHzlSq0-Suf_KJhTwNFxpI80iCOO1Z6v2rzdY5sK7GrNomKQhlKcLNRhhtSjbiYGElP7zUw98Q6lKskQElNs-GpBNTxYvq-qeZ14GYQOdHKSv02vrQkiFQ-WXeVMJ3Pn1-Vq3zVPtMOLjJqmiw74s8EsJuxGNS447hBCA_BJpoh88vJ0n0N-1TiUKhk1v3mtXJgSxy-xicZVCILPG9vfnFbKYpJLKMYkFNJhu_eAD39f5qg"/>
-</div>
-<div>
-<h3 class="text-white font-bold text-lg">Phạm Thu Hà</h3>
-<p class="text-text-secondary font-medium text-sm">Customer Success</p>
+<h3 class="text-white font-bold text-lg">Nguyễn Văn Trung</h3>
+<p class="text-primary font-medium text-sm">CO-Founder</p>
 </div>
 </div>
 </div>
