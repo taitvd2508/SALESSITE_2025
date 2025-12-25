@@ -9,6 +9,7 @@
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
   let full_name = '';
+  let phone = '';
   let email = '';
   let password = '';
   let confirm = '';
@@ -39,11 +40,11 @@
 
     loading = true;
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          data: { full_name },
+          data: { full_name, phone },
         },
       });
       if (error) throw error;
@@ -89,6 +90,25 @@
         <form class="flex flex-col gap-5" on:submit={onSubmit}>
           <div class="flex flex-col gap-5 md:flex-row">
             <label class="flex flex-col flex-1">
+              <span class="pb-2 text-sm font-medium text-white">Email</span>
+              <div class="relative">
+                <input
+                  class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                  placeholder="example@email.com"
+                  type="email"
+                  bind:value={email}
+                  required
+                />
+                <span
+                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                  >mail</span
+                >
+              </div>
+            </label>
+          </div>
+
+          <div class="flex flex-col gap-5 md:flex-row">
+            <label class="flex flex-col flex-1">
               <span class="pb-2 text-sm font-medium text-white">Họ và tên</span>
               <div class="relative">
                 <input
@@ -106,18 +126,20 @@
             </label>
 
             <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white">Email</span>
+              <span class="pb-2 text-sm font-medium text-white"
+                >Số điện thoại</span
+              >
               <div class="relative">
                 <input
                   class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                  placeholder="example@email.com"
-                  type="email"
-                  bind:value={email}
+                  placeholder="0911.111.222"
+                  type="tel"
+                  bind:value={phone}
                   required
                 />
                 <span
                   class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >mail</span
+                  >phone</span
                 >
               </div>
             </label>
