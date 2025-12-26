@@ -37,3 +37,5 @@ coverage/
 # Supabase local (nếu bạn dùng supabase cli)
 supabase/.temp/
 supabase/.branches/
+
+GEMINI.md

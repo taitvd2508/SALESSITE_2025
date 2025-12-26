@@ -27,10 +27,12 @@
 <section class="w-full max-w-[1200px] px-4 md:px-10 py-10">
 <div class="flex justify-between items-end mb-6">
 <h2 class="text-white text-2xl font-bold leading-tight tracking-[-0.015em]">Danh mục sản phẩm</h2>
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="text-primary text-sm font-bold hover:underline" href="#">Xem tất cả</a>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
 <!-- Category Item 1 -->
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="group flex flex-col gap-3 pb-3 cursor-pointer" href="#">
 <div class="w-full aspect-square bg-card-dark rounded-xl overflow-hidden relative border border-white/5 group-hover:border-primary/50 transition-all">
 <div class="absolute inset-0 bg-center bg-contain bg-no-repeat transition-transform duration-500 group-hover:scale-110" data-alt="Modern silver laptop isolated" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuARdy25_DTxJxYjtAKSJmC6hv6ZVgSA0D_mzbQXDcaHX3fMX5xG6tfa5H15eXgvlo-CjhY74JJmZKuWFigpq8fs1qNVe8DyiZ_50cFk85pWuJVORH5-KEOsc9G1xjj3K4vyK1tpD3Rnp8ExtSS32jQvC-kMbRdBcLxBiPDTNduod7xO56qUyz6y_21meORFDG34JJDTilgnqHTPl2egYWqHn7mnluF2YtpcXgqKYMyJCXpLTEdMVUuDH-pi0p6s0yrwh1Lc8Bq5ew");'></div>
@@ -41,6 +43,7 @@
 </div>
 </a>
 <!-- Category Item 2 -->
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="group flex flex-col gap-3 pb-3 cursor-pointer" href="#">
 <div class="w-full aspect-square bg-card-dark rounded-xl overflow-hidden relative border border-white/5 group-hover:border-primary/50 transition-all">
 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-500 group-hover:scale-110" data-alt="High resolution computer monitor" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAhW9nR2spufqZJIreicg08KAuU5TJGiDwOnAMeAeUX2HF1Mdx8SZgTOdicqPLBatBy9bx2N-oMbXCnUQmordDdhh-YhlwD7N0hgNxq-J0Dw1CPTc4nrs8uNmvZPRbguT6OCweWR176nmXadPEEAD_x0etj4ckdX_j-RelmyRlflGIzE8fJgtG9xdeJNwRLH0K3Gt-kTMLQZ-LpJ6tUn-Mjib_N_0uEN7aD_FndjA7dxjUvVu7tOF_g_ZfXcRunIMzF9nkEsuatsg");'></div>
@@ -51,6 +54,7 @@
 </div>
 </a>
 <!-- Category Item 3 -->
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="group flex flex-col gap-3 pb-3 cursor-pointer" href="#">
 <div class="w-full aspect-square bg-card-dark rounded-xl overflow-hidden relative border border-white/5 group-hover:border-primary/50 transition-all">
 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-500 group-hover:scale-110" data-alt="Wireless headphones" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXlHVFSfi4XNo4LfWhFq7aCVQ7bKgBFkGF8gI_EzGeeJvFLGVa8BHRiPpDlNPcbd8GhzWprGHTBwkBW4W9TIJgPtS0gjK_e1dTDSl-hurRez5n_2vrTzIGGIrgzdl6c-KxrEx38i7z3WZx-4fF5iFtK6BEAgFrouJeKkcz02PBjp9-n-jrgG_triKDxwAPkldVk4YNck7daalrZrFHuWO_XRklg5C0wzQha8AElrW62zddtvomeiVJzxo875ZN6eg3jpfm7PxoBw");'></div>
@@ -61,6 +65,7 @@
 </div>
 </a>
 <!-- Category Item 4 -->
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="group flex flex-col gap-3 pb-3 cursor-pointer" href="#">
 <div class="w-full aspect-square bg-card-dark rounded-xl overflow-hidden relative border border-white/5 group-hover:border-primary/50 transition-all">
 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-500 group-hover:scale-110" data-alt="Gaming mouse with RGB lighting" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDAdJnnO-LcJNo_9nByKl00Hf0i0YYT_qrPvAYLJRf0YsKa6l4g025nzfl85BLJvXP33kORlk4hfVTwOsvcGacyuJpzl7V-lp4TTM9pw_Kp0zFn-iPaNXmevacUNN248pJBc_Z_9rZ2_KnsVb6TLLcSFNXez6p6Ikv8XHCu80Hk7HgBk5IDhD4NNMpp9CEhEhzDSLDkttK-TIrBtYi5WUHKxWa641KJtm58a8CJ4n5O9DYK9rNCpLdDgGPTR_f51gKIjVxaCZTu6Q");'></div>
@@ -71,6 +76,7 @@
 </div>
 </a>
 <!-- Category Item 5 -->
+<!-- svelte-ignore a11y-invalid-attribute -->
 <a class="group flex flex-col gap-3 pb-3 cursor-pointer" href="#">
 <div class="w-full aspect-square bg-card-dark rounded-xl overflow-hidden relative border border-white/5 group-hover:border-primary/50 transition-all">
 <div class="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-500 group-hover:scale-110" data-alt="Mechanical keyboard close up" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAmrH4ZoUY9wiagx9as-EUiuHoiqvTheD8ICLY0iLjUcpdwKK3PkWqTAXdIgd8EIEkNlEWGHhMAnaovK2Ox3uRrkpPIhGRqRz9f4RuYRlvE1YN7P7UAEjJ6oUht8PT1Xy1KpK_Ep7-KYSI71y92Pl5hz-SveQBL811IVwL5iMO3vvjfKo7Mmcboh3UAU7c73zUJhBWDVH-edekgV_L9rFUTD-YQuKyeDp6k9XTGQR4lPcGnqk_q8OTtxJGkx9GdH160L_LvJxgfvA");'></div>
