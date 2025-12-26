@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { cart, cartTotals } from '$lib/stores/cart';
   import { supabase } from '$lib/supabase/client'; // bạn phải có file này
 
@@ -36,6 +36,15 @@
           ],
         },
         {
+          title: 'Dòng máy',
+          links: [
+            { label: 'Gaming', href: '/products?type=laptop&des=gaming' },
+            { label: 'Văn phòng', href: '/products?type=laptop&des=office' },
+            { label: 'Đồ hoạ', href: '/products?type=laptop&des=creator' },
+            { label: 'Cao cấp', href: '/products?type=laptop&des=premium' },
+          ],
+        },
+        {
           title: 'Sắp xếp',
           links: [
             { label: 'Mới nhất', href: '/products?type=Laptop&sort=newest' },
@@ -46,6 +55,18 @@
             {
               label: 'Giá giảm dần',
               href: '/products?type=Laptop&sort=price_desc',
+            },
+            {
+              label: 'Dưới 20 Triệu',
+              href: '/products?type=Laptop&min=0&max=20000000',
+            },
+            {
+              label: '20 - 30 Triệu',
+              href: '/products?type=Laptop&min=20000000&max=30000000',
+            },
+            {
+              label: 'Trên 30 Triệu',
+              href: '/products?type=Laptop&min=30000000&max=1000000000',
             },
           ],
         },
@@ -65,6 +86,22 @@
             { label: 'AOC', href: '/products?type=Màn%20hình&brand=AOC' },
           ],
         },
+        {
+          title: 'Kích thước',
+          links: [
+            { label: '24 inch', href: '/products?type=Màn%20hình&size=24' },
+            { label: '27 inch', href: '/products?type=Màn%20hình&size=27' },
+            { label: '32 inch', href: '/products?type=Màn%20hình&size=32' },
+          ],
+        },
+        {
+          title: 'Tần số quét',
+          links: [
+            { label: '75Hz', href: '/products?type=Màn%20hình&hz=75' },
+            { label: '144Hz', href: '/products?type=Màn%20hình&hz=144' },
+            { label: '240Hz+', href: '/products?type=Màn%20hình&hz=240' },
+          ],
+        },
       ],
     },
     {
@@ -78,14 +115,67 @@
             { label: 'Bàn phím', href: '/products?type=Bàn%20phím' },
             { label: 'Chuột', href: '/products?type=Chuột' },
             { label: 'Tai nghe', href: '/products?type=Tai%20nghe' },
+            { label: 'Lót chuột', href: '/products?type=Lót%20chuột' },
           ],
         },
         {
-          title: 'Khác',
+          title: 'Thương hiệu Bàn phím',
           links: [
-            { label: 'Mới nhất', href: '/products?sort=newest' },
-            { label: 'Giá tăng dần', href: '/products?sort=price_asc' },
-            { label: 'Giá giảm dần', href: '/products?sort=price_desc' },
+            {
+              label: 'Logitech',
+              href: '/products?type=Bàn%20phím&brand=Logitech',
+            },
+            { label: 'Razer', href: '/products?type=Bàn%20phím&brand=Razer' },
+            {
+              label: 'Akko',
+              href: '/products?type=Bàn%20phím&brand=Akko',
+            },
+            {
+              label: 'Keychron',
+              href: '/products?type=Bàn%20phím&brand=Keychron',
+            },
+            {
+              label: 'HyperX',
+              href: '/products?type=Bàn%20phím&brand=HyperX',
+            },
+            {
+              label: 'Corsair',
+              href: '/products?type=Bàn%20phím&brand=Corsair',
+            },
+            {
+              label: 'DareU',
+              href: '/products?type=Bàn%20phím&brand=DareU',
+            },
+          ],
+        },
+        {
+          title: 'Thương hiệu Tai Nghe',
+          links: [
+            {
+              label: 'Sony',
+              href: '/products?type=Tai%20nghe&brand=Sony',
+            },
+            { label: 'Apple', href: '/products?type=Tai%20nghe&brand=Apple' },
+            {
+              label: 'Samsung',
+              href: '/products?type=Tai%20nghe&brand=Samsung',
+            },
+            {
+              label: 'JBL',
+              href: '/products?type=Tai%20nghe&brand=JBL',
+            },
+            {
+              label: 'Beats',
+              href: '/products?type=Tai%20nghe&brand=Beats',
+            },
+            {
+              label: 'Razer',
+              href: '/products?type=Tai%20nghe&brand=Razer',
+            },
+            {
+              label: 'HyperX',
+              href: '/products?type=Tai%20nghe&brand=HyperX',
+            },
           ],
         },
       ],
@@ -125,8 +215,12 @@
 
   async function logout() {
     await supabase.auth.signOut();
-    // reload để layout lấy user=null
-    goto('/');
+
+    // ép SvelteKit reload lại +layout.server.ts => user/profile = null
+    await invalidateAll();
+
+    // chuyển về trang chủ
+    await goto('/');
   }
 
   $: count = cartTotals($cart.items).count;
@@ -175,9 +269,7 @@
           >
             <span class="material-symbols-outlined">account_circle</span>
             <span class="text-sm"
-              >Hello, {shortName(
-                profile ? profile.full_name : user.email
-              )}</span
+              >Hello, {shortName(profile?.full_name ?? user.email)}</span
             >
             <!--Nếu có profile thì lấy fullname. Còn ko có thì lấy user.email-->
           </a>
