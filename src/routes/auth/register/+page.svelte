@@ -49,8 +49,7 @@
       });
       if (error) throw error;
 
-      okMsg = 'Đăng ký thành công. Bạn có thể đăng nhập ngay.';
-      await goto('/auth/login');
+      okMsg = 'Đăng ký thành công. Vui lòng vào Email để xác nhận!';
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đăng ký thất bại';
     } finally {
@@ -277,24 +276,33 @@
               class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
               type="button"
             >
-              <img
-                alt="Google Logo"
+              <svg
+                aria-hidden="true"
                 class="w-5 h-5"
-                data-alt="Google colorful logo icon"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCapaJ1Lk5mMKFR_ISQchzJSV-YHtRI9VbH6uRTM_gPGHq1-Mn3sp8xwcbkW6hVM0qvVFKebkeBWzt633AIqpohlnw9D2LnZE8e0dJnOaE_zDMRFBpX9lMm_TwGwMe39mExu3Bhd2SmhrmAwC_lGFh0bOkE7Rt1omgJJCKAHzmOL2dkw6OMlKnouY44icimepHEhaa0e6maCK8fdFOYAjn12SJjQagXjfkEox0ILpg2LgNZ-jRDD3xF7fV5Oo7FCoXMG_LWr-o5GA"
-              />
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.0003 20.45c-4.6667 0-8.4503-3.7836-8.4503-8.45s3.7836-8.45 8.4503-8.45c2.2818 0 4.3485.8364 5.9636 2.2145l-1.92 1.92c-.9981-.96-2.3781-1.5545-3.9054-1.5545-3.3218 0-6.0218 2.7-6.0218 6.0218s2.7 6.0218 6.0218 6.0218c2.8254 0 5.2909-1.8982 5.8636-4.6255h-5.8636v-2.4272h8.3345c.1255.6163.1855 1.2545.1855 1.92 0 4.7073-3.1582 8.45-8.6582 8.45z"
+                  fill="currentColor"
+                ></path>
+              </svg>
               <span class="text-sm font-medium">Google</span>
             </button>
             <button
               class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
               type="button"
             >
-              <img
-                alt="Facebook Logo"
-                class="w-5 h-5"
-                data-alt="Facebook colorful logo icon"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmXGZ5TvHOpGqI5yozXy1yEUpGnoBF7LrqO_ap4QWkUA9smBgxgPaSxgArp0WuLyfUzeBgeC1ywcJQAbFD0JiYbOSViWNn_vOJ5lJ_pYlOlrDk8TYex3VnLVA1CBB8sJ66JZJOnp38ko99WVLCI3hp1H1qkcdcdJlMWJKr771REoZYC99k2GQyLmKYh67TdpiOirFnmq0SHk9OeEU_A3tJQOQXwZ55qPFOXUQw1HymIPrYg2ZjfA6GPgub8rXi75mPmf9kRjiU3g"
-              />
+              <svg
+                aria-hidden="true"
+                class="h-5 w-5 text-[#1877F2]"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                ></path>
+              </svg>
               <span class="text-sm font-medium">Facebook</span>
             </button>
           </div>
