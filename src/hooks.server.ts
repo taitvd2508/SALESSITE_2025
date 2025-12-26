@@ -1,7 +1,11 @@
 import type { Handle } from '@sveltejs/kit';
 import { randomUUID } from 'crypto';
-import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+
+import { createServerClient } from '@supabase/ssr';
+import {
+  PUBLIC_SUPABASE_URL,
+  PUBLIC_SUPABASE_ANON_KEY,
+} from '$env/static/public';
 
 export const handle: Handle = async ({ event, resolve }) => {
   // 1) cookie name để tracking hành vi
@@ -15,23 +19,42 @@ export const handle: Handle = async ({ event, resolve }) => {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // deploy https => true
-      maxAge: 60 * 60 * 24 * 30
+      secure: false,
+      maxAge: 60 * 60 * 24 * 30,
     });
   }
 
   // 2) attach supabase client vào locals (anon key)
-  event.locals.supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: false,  // server-side: không lưu session
-      autoRefreshToken: false
+  event.locals.supabase = createServerClient(
+    PUBLIC_SUPABASE_URL,
+    PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get: (key) => event.cookies.get(key),
+        set: (key, value, options) =>
+          event.cookies.set(key, value, { path: '/', ...options }),
+        remove: (key, options) =>
+          event.cookies.delete(key, { path: '/', ...options }),
+      },
     }
-  });
+  );
 
   // 3) nếu bạn muốn tiện dùng sid ở mọi nơi
   event.locals.tt_sid = sid;
 
-  return resolve(event);
+  // Optional: expose session getter for convenience
+  event.locals.getSession = async () => {
+    const {
+      data: { session },
+    } = await event.locals.supabase.auth.getSession();
+    return session;
+  };
+
+  return resolve(event, {
+    filterSerializedResponseHeaders(name) {
+      return name === 'content-range' || name === 'x-supabase-api-version';
+    },
+  });
 };
 
 /* 

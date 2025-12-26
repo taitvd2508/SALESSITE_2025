@@ -1,12 +1,7 @@
 <script lang="ts">
-  import { createClient } from '@supabase/supabase-js';
-  import {
-    PUBLIC_SUPABASE_URL,
-    PUBLIC_SUPABASE_ANON_KEY,
-  } from '$env/static/public';
+  import { supabase } from '$lib/supabase/client';
   import { goto } from '$app/navigation';
-
-  const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
+  import { invalidateAll } from '$app/navigation';
 
   let email = '';
   let password = '';
@@ -21,6 +16,7 @@
     loading = true;
 
     try {
+      console.log('submit login');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -36,7 +32,12 @@
         return;
       }
 
-      await goto('/account');
+      // ✅ redirect sau khi login OK
+      const { data: s } = await supabase.auth.getSession();
+      const next =
+        new URLSearchParams(window.location.search).get('next') ?? '/account';
+      await invalidateAll(); // cực quan trọng để SSR reload theo cookie mới // để header/layout refresh ngay.
+      await goto(next);
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đăng nhập thất bại';
     } finally {
@@ -102,7 +103,7 @@
           </p>
         </div>
 
-        <form class="flex flex-col gap-5" on:submit={onSubmit}>
+        <form class="flex flex-col gap-5" on:submit|preventDefault={onSubmit}>
           <!-- Email Input -->
           <div class="flex flex-col gap-2">
             <label
