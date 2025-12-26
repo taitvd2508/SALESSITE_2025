@@ -315,6 +315,7 @@
         {#each menu as item}
           <div
             class="relative"
+            role="presentation"
             on:mouseenter={() => openMenu(item.key)}
             on:mouseleave={scheduleClose}
           >
@@ -338,8 +339,8 @@
 
             {#if openKey === item.key}
               <div
-                class="absolute left-0 top-full z-[100000] w-[760px] max-w-[calc(100vw-2rem)]
-                       rounded-xl border border-[#232f48] bg-[#2b3138] shadow-2xl overflow-hidden"
+                class="absolute left-0 top-full z-[100000] w-[760px] max-w-[calc(100vw-2rem)] rounded-xl border border-[#232f48] bg-[#2b3138] shadow-2xl overflow-hidden"
+                role="presentation"
                 on:mouseenter={() => openMenu(item.key)}
                 on:mouseleave={scheduleClose}
               >
@@ -366,6 +367,83 @@
             {/if}
           </div>
         {/each}
+        <div class="relative">
+          <!-- ✅ Guest(chưa login): thêm "Kiểm tra đơn hàng" -->
+          {#if !user}
+            <a
+              href="/account/orders"
+              class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-white transition-colors rounded-lg hover:text-primary"
+            >
+              <span class="material-symbols-outlined text-[20px]"
+                >receipt_long</span
+              >
+              Kiểm tra đơn hàng
+            </a>
+          {/if}
+          <!-- ✅ Logged in: dropdown "Tài Khoản" -->
+          {#if user}
+            <div
+              class="relative"
+              role="presentation"
+              on:mouseenter={() => openMenu('account')}
+              on:mouseleave={scheduleClose}
+            >
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-white transition-colors rounded-lg hover:text-primary"
+                class:text-primary={openKey === 'account'}
+              >
+                <span class="material-symbols-outlined text-[20px]">person</span
+                >
+                Tài khoản
+                <span class="material-symbols-outlined text-[18px] opacity-80"
+                  >expand_more</span
+                >
+              </button>
+
+              {#if openKey === 'account'}
+                <div
+                  class="absolute left-0 top-full mt-2 z-[100000] w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-[#232f48] bg-[#2b3138] shadow-2xl overflow-hidden"
+                  role="presentation"
+                  on:mouseenter={() => openMenu('account')}
+                  on:mouseleave={scheduleClose}
+                >
+                  <a
+                    href="/account"
+                    class="flex items-center gap-3 px-4 py-3 text-sm text-white/90 hover:text-white hover:bg-[#232f48]/60"
+                  >
+                    <span class="material-symbols-outlined text-[20px]"
+                      >badge</span
+                    >
+                    Thông tin cá nhân
+                  </a>
+
+                  <a
+                    href="/account/orders"
+                    class="flex items-center gap-3 px-4 py-3 text-sm text-white/90 hover:text-white hover:bg-[#232f48]/60"
+                  >
+                    <span class="material-symbols-outlined text-[20px]"
+                      >local_shipping</span
+                    >
+                    Đơn hàng của bạn
+                  </a>
+
+                  <div class="h-px my-1 bg-primary/30"></div>
+
+                  <a
+                    href="/account/change-password"
+                    class="flex items-center gap-3 px-4 py-3 text-sm text-white/90 hover:text-white hover:bg-[#232f48]/60"
+                  >
+                    <span class="material-symbols-outlined text-[20px]"
+                      >encrypted</span
+                    >
+                    Đổi mật khẩu
+                  </a>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
       </nav>
 
       <a

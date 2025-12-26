@@ -17,16 +17,17 @@
 </script>
 
 <main class="flex flex-col flex-1">
-  <div class="w-full max-w-5xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
+  <div class="w-full max-w-6xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
     <div
-      class="rounded-2xl bg-white dark:bg-[#1b2333] border border-slate-200/70 dark:border-white/10 shadow-sm p-4 sm:p-6 lg:p-8"
+      class="p-4 border border-gray-100 shadow-sm rounded-2xl sm:p-6 lg:p-8 dark:bg-surface-dark dark:border-border-dark"
     >
-      <div
-        class="flex flex-col gap-2 pb-6 border-b border-slate-100 dark:border-[#232f48]"
-      >
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
-          Hồ sơ của tôi
-        </h2>
+      <div class="pb-6 mb-6 border-b border-gray-100 dark:border-border-dark">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined text-primary">person</span>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+            Hồ sơ của tôi
+          </h2>
+        </div>
         <p class="text-slate-500 dark:text-[#92a4c9] text-sm">
           Quản lý thông tin hồ sơ để bảo mật tài khoản
         </p>
