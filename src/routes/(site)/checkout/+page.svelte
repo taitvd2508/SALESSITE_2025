@@ -2,11 +2,22 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { cart, cartTotals, vnd, type CartItem } from '$lib/stores/cart';
+  export let data: {
+    user: any | null;
+    prefill: {
+      full_name: string;
+      phone: string;
+      email: string;
+      address: string;
+    };
+  };
 
-  let full_name = '';
-  let phone = '';
-  let email = '';
-  let address = '';
+  // ✅ default: nếu login -> có data.prefill, guest -> rỗng
+  let full_name = data.prefill.full_name;
+  let phone = data.prefill.phone;
+  let email = data.prefill.email;
+  let address = data.prefill.address;
+
   let note = '';
   let payment_method: 'cod' | 'bank' | 'wallet' = 'cod';
 
