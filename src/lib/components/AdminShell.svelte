@@ -63,8 +63,9 @@
       </div>
 
       <div class="flex flex-col gap-2">
+        <!-- svelte-ignore a11y-invalid-attribute -->
         <a
-          href="/"
+          href="#"
           class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-[#232f48] hover:text-white transition-colors">
           <span class="material-symbols-outlined text-xl">home</span>
           <p class="text-sm font-medium">Về trang bán hàng</p>

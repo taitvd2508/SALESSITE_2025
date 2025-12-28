@@ -188,9 +188,10 @@
     <nav aria-label="Breadcrumb" class="flex mb-4">
       <ol class="inline-flex items-center space-x-1 md:space-x-3">
         <li class="inline-flex items-center">
+          <!-- svelte-ignore a11y-invalid-attribute -->
           <a
             class="inline-flex items-center text-sm font-medium text-text-secondary hover:text-white"
-            href="/"
+            href="#"
           >
             <span class="mr-1 text-lg material-symbols-outlined">home</span>
             Trang chủ

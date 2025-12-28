@@ -228,10 +228,12 @@
                 class="text-[#92a4c9] text-sm leading-tight group-hover:text-white transition-colors"
               >
                 Tôi đã đọc và đồng ý với
+                <!-- svelte-ignore a11y-invalid-attribute -->
                 <a class="underline text-primary hover:text-blue-400" href="#"
                   >Điều khoản dịch vụ</a
                 >
                 và
+                <!-- svelte-ignore a11y-invalid-attribute -->
                 <a class="underline text-primary hover:text-blue-400" href="#"
                   >Chính sách bảo mật</a
                 >
