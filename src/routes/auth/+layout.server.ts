@@ -3,7 +3,7 @@ import { redirect } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   // cách 1: dùng getSession bạn đã gắn trong hooks (khuyến nghị)
-  const session = await locals.getSession?.();
+  const { session } = await locals.getSession();
 
   // Nếu bạn chưa có locals.getSession thì dùng:
   // const { data: { session } } = await locals.supabase.auth.getSession();

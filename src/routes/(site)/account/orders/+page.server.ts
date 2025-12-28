@@ -13,8 +13,7 @@ function parseOrderId(input: string) {
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export const load: PageServerLoad = async ({ locals }) => {
-  const session = await locals.getSession?.();
-  const user = session?.user ?? null;
+  const { user } = await locals.getSession();
 
   let orders: any[] = [];
   if (user) {
