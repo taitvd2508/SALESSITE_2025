@@ -1,8 +1,7 @@
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-  const session = await locals.getSession?.();
-  const user = session?.user ?? null;
+  const { user } = await locals.getSession();
 
   let prefill = {
     full_name: '',
