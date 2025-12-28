@@ -231,6 +231,7 @@
 >
   <div class="mx-auto w-full max-w-[1200px] px-4 md:px-10 py-3">
     <div class="flex items-center justify-between gap-4">
+      <!-- svelte-ignore a11y-invalid-attribute -->
       <a href="/" class="flex items-center gap-3 text-white shrink-0">
         <div
           class="flex items-center justify-center text-white rounded size-8 bg-primary"

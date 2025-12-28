@@ -124,7 +124,8 @@
 <main class="flex-1 w-full max-w-[1280px] mx-auto px-4 lg:px-10 py-6">
   <!-- Breadcrumbs -->
   <div class="flex flex-wrap gap-2 py-4 mb-4">
-    <a class="text-[#92a4c9] hover:text-primary text-sm font-medium leading-normal" href="/">Trang chủ</a>
+    <!-- svelte-ignore a11y-invalid-attribute -->
+    <a class="text-[#92a4c9] hover:text-primary text-sm font-medium leading-normal" href="#">Trang chủ</a>
     <span class="text-[#92a4c9] text-sm font-medium leading-normal">/</span>
     <a class="text-[#92a4c9] hover:text-primary text-sm font-medium leading-normal" href={`/products?type=${encodeURIComponent(type)}`}>
       {type || 'Sản phẩm'}
