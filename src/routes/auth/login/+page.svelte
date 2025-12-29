@@ -47,7 +47,7 @@
 </script>
 
 <svelte:head>
-  <title>Đăng nhập TT STORE</title>
+  <title>TT STORE - Đăng Nhập</title>
 </svelte:head>
 
 <main class="flex justify-center flex-1 w-full">

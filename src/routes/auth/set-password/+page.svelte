@@ -3,7 +3,10 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { createClient } from '@supabase/supabase-js';
-  import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+  import {
+    PUBLIC_SUPABASE_URL,
+    PUBLIC_SUPABASE_ANON_KEY,
+  } from '$env/static/public';
 
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
@@ -50,35 +53,43 @@
 </script>
 
 <svelte:head>
-  <title>Đặt Mật Khẩu - TT STORE</title>
+  <title>TT STORE - Đặt Mật Khẩu</title>
 </svelte:head>
 
-<main class="max-w-md mx-auto px-4 py-12">
+<main class="max-w-md px-4 py-12 mx-auto">
   <div class="bg-surface-dark border border-[#232f48] rounded-2xl p-6">
-    <h1 class="text-white text-xl font-bold">Đặt mật khẩu</h1>
-    <p class="text-[#92a4c9] text-sm mt-1">Thiết lập mật khẩu cho tài khoản của bạn.</p>
+    <h1 class="text-xl font-bold text-white">Đặt mật khẩu</h1>
+    <p class="text-[#92a4c9] text-sm mt-1">
+      Thiết lập mật khẩu cho tài khoản của bạn.
+    </p>
 
     <div class="mt-6 space-y-4">
       <div>
-        <label class="text-sm text-[#92a4c9]">Mật khẩu mới</label>
+        <label class="text-sm text-[#92a4c9]" for="newPassword"
+          >Mật khẩu mới</label
+        >
         <input
           class="mt-1 w-full bg-[#101622] border border-[#232f48] text-white rounded-lg p-3 outline-none focus:border-primary"
           type="password"
+          id="newPassword"
           bind:value={password}
         />
       </div>
 
       <div>
-        <label class="text-sm text-[#92a4c9]">Nhập lại mật khẩu</label>
+        <label class="text-sm text-[#92a4c9]" for="confirmPassword"
+          >Nhập lại mật khẩu</label
+        >
         <input
           class="mt-1 w-full bg-[#101622] border border-[#232f48] text-white rounded-lg p-3 outline-none focus:border-primary"
           type="password"
+          id="confirmPassword"
           bind:value={confirm}
         />
       </div>
 
       <button
-        class="w-full bg-primary hover:bg-blue-700 text-white font-bold rounded-xl py-3 disabled:opacity-60"
+        class="w-full py-3 font-bold text-white bg-primary hover:bg-blue-700 rounded-xl disabled:opacity-60"
         on:click={setPassword}
         disabled={loading}
       >
@@ -86,10 +97,10 @@
       </button>
 
       {#if errorMsg}
-        <p class="text-red-400 text-sm">{errorMsg}</p>
+        <p class="text-sm text-red-400">{errorMsg}</p>
       {/if}
       {#if okMsg}
-        <p class="text-green-400 text-sm">{okMsg}</p>
+        <p class="text-sm text-green-400">{okMsg}</p>
       {/if}
     </div>
   </div>

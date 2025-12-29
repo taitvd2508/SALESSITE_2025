@@ -16,6 +16,10 @@
   $: email = profile.email ?? user?.email ?? '';
 </script>
 
+<svelte:head>
+  <title>TT STORE - Thông Tin Tài Khoản</title>
+</svelte:head>
+
 <main class="flex flex-col flex-1">
   <div class="w-full max-w-6xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
     <div

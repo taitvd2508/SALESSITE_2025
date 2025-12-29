@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-  <title>Đơn hàng đã mua - TT STORE</title>
+  <title>TT STORE - Đơn hàng đã mua</title>
 </svelte:head>
 
 <main
