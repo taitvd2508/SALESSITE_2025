@@ -98,7 +98,7 @@
 </script>
 
 <svelte:head>
-  <title>Đổi mật khẩu - TT STORE</title>
+  <title>TT STORE - Đổi Mật Khẩu</title>
 </svelte:head>
 
 <div class="w-full">

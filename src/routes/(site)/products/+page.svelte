@@ -179,7 +179,7 @@
 </script>
 
 <svelte:head>
-  <title>Sản phẩm TT STORE</title>
+  <title>TT STORE - Sản Phẩm</title>
 </svelte:head>
 
 <main class="flex-grow w-full px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">

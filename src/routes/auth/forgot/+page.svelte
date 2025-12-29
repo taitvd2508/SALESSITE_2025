@@ -38,7 +38,7 @@
 </script>
 
 <svelte:head>
-  <title>Quên mật khẩu - TT STORE</title>
+  <title>TT STORE - Quên Mật Khẩu</title>
 </svelte:head>
 
 <main

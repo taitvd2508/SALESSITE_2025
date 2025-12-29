@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-  <title>Checkout - TT STORE</title>
+  <title>TT STORE - Thanh Toán</title>
 </svelte:head>
 
 <main

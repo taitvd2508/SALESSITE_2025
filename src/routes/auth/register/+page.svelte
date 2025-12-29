@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-  <title>Đăng ký tài khoản - TT STORE</title>
+  <title>TT STORE - Đăng Ký Tài Khoản</title>
 </svelte:head>
 
 <main
