@@ -32,11 +32,11 @@
         return;
       }
 
-      // ✅ redirect sau khi login OK
+      // redirect sau khi login success
       const { data: s } = await supabase.auth.getSession();
       const next =
         new URLSearchParams(window.location.search).get('next') ?? '/account';
-      await invalidateAll(); // cực quan trọng để SSR reload theo cookie mới // để header/layout refresh ngay.
+      await invalidateAll(); //SSR reload theo cookie mới // để header/layout refresh ngay.
       await goto(next);
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đăng nhập thất bại';
@@ -65,7 +65,7 @@
       <div
         class="absolute inset-0 bg-center bg-cover opacity-60 mix-blend-overlay"
         data-alt="futuristic technology setup with neon lights"
-        style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDX783tOa9vcL_Y4f7pxdJPNkmasFPWNIezoEl7x1RcoZ77Q5oBwx2GM_DiJsQh3rE6qVg1PpDGFGhTXFVN6uYs-vg-Sqd1vjK6dtif3Gv20PDROtoeEEGZaVoR2a7XYldFKmBQsXHaOQjm3o9_gIqYXDePSGZPtmLVeTJlH_cw-iq2LVUe2jSoFOuLfCukmrqfjLjNBF6mxLAASb6QXlQJ4BULq2kYc79hXCrfPRH7IMl3rMY01TXrkHdkm6TWc0KKpsqh2mdv3Q');"
+        style="background-image: url('https://elabcalarempslfrkwbx.supabase.co/storage/v1/object/public/products/login/login_page.png');"
       ></div>
 
       <div class="relative z-20 max-w-lg px-6 text-center md:text-left">
