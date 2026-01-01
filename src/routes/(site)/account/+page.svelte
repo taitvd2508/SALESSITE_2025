@@ -5,7 +5,7 @@
   const user = data.user;
   const profile = data.profile ?? {};
 
-  // hiển thị tên ngắn cho greeting
+  // short name for greeting
   const shortName = (name: string) => {
     const s = (name ?? "").trim();
     if (!s) return "bạn";
@@ -19,14 +19,6 @@
   // Use string directly for native date input (YYYY-MM-DD)
   let birthdayString = profile.birthday ?? "";
 </script>
-
-<style>
-  /* Làm cho icon lịch của input type="date" thành màu trắng (cho Chrome/Edge/Safari) */
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    cursor: pointer;
-  }
-</style>
 
 <svelte:head>
   <title>TT STORE - Thông Tin Tài Khoản</title>
@@ -49,47 +41,27 @@
         </p>
       </div>
 
-                  {#if data?.error || (form && !form.ok)}
+      {#if data?.error || (form && !form.ok)}
+        <div class="flex justify-center mt-6 px-4 text-center">
+          <div
+            class="p-3 w-fit border border-red-200 rounded-lg bg-red-50 text-red-700 text-sm shadow-sm"
+          >
+            {data?.error || form?.message}
+          </div>
+        </div>
+      {/if}
 
-                  <div class="flex justify-center mt-6 px-4 text-center">
+      {#if form?.ok && form?.message}
+        <div class="flex justify-center mt-6 px-4 text-center">
+          <div
+            class="p-3 w-fit border border-green-200 rounded-lg bg-green-50 text-green-700 text-sm shadow-sm"
+          >
+            {form.message}
+          </div>
+        </div>
+      {/if}
 
-                    <div
-
-                      class="p-3 w-fit border border-red-200 rounded-lg bg-red-50 text-red-700 text-sm shadow-sm"
-
-                    >
-
-                      {data?.error || form?.message}
-
-                    </div>
-
-                  </div>
-
-                  {/if}
-
-            
-
-                  {#if form?.ok && form?.message}
-
-                  <div class="flex justify-center mt-6 px-4 text-center">
-
-                    <div
-
-                      class="p-3 w-fit border border-green-200 rounded-lg bg-green-50 text-green-700 text-sm shadow-sm"
-
-                    >
-
-                      {form.message}
-
-                    </div>
-
-                  </div>
-
-                  {/if}
-
-            
-            <div class="flex flex-col-reverse gap-10 mt-8 lg:flex-row">
-        <!-- Form -->
+      <div class="flex flex-col-reverse gap-10 mt-8 lg:flex-row">
         <form class="flex flex-col flex-1 gap-6" method="POST">
           <!-- Username -->
           <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
@@ -102,11 +74,6 @@
               class="w-full min-w-0 text-base font-medium sm:flex-1 text-slate-900 dark:text-white"
             >
               {user?.email}
-              <span
-                class="inline-flex items-center px-2 py-1 ml-3 text-xs font-bold text-green-700 bg-green-100 rounded-md"
-              >
-                Đã đăng nhập
-              </span>
             </div>
           </div>
 
@@ -183,41 +150,53 @@
             </div>
           </div>
 
-                    <!-- Birthday -->
-                    <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
-                      <label
-                        for="birthday"
-                        class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
-                        >Ngày sinh</label
-                      >
-                      <div class="w-full sm:flex-1">
-                        <input 
-                          type="date" 
-                          name="birthday" 
-                          id="birthday"
-                          bind:value={birthdayString}
-                          class="w-full max-w-[200px] min-w-0 form-input rounded-lg
+          <!-- Birthday -->
+          <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
+            <label
+              for="birthday"
+              class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
+              >Ngày sinh</label
+            >
+            <div class="w-full sm:flex-1">
+              <input
+                type="date"
+                name="birthday"
+                id="birthday"
+                bind:value={birthdayString}
+                class="w-full max-w-[200px] min-w-0 form-input rounded-lg
                           border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a]
                           text-slate-900 dark:text-white focus:border-primary
                           focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
-                        />
-                      </div>
-                    </div>
-                    <!-- Email readonly -->
+              />
+            </div>
+          </div>
+          <!-- Email readonly -->
           <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
             <label
               for="email"
               class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
               >Email</label
             >
-            <input
-              class="w-full min-w-0 sm:flex-1 form-input rounded-lg border-none bg-slate-100 dark:bg-[#0b1220] text-slate-500 dark:text-[#64748b] text-sm h-11 px-4 cursor-not-allowed"
-              disabled
-              name="email"
-              id="email"
-              value={email}
-              autocomplete="email"
-            />
+            <div class="flex items-center gap-3 w-full sm:flex-1">
+              <div
+                class="w-fit max-w-full truncate rounded-lg border-none bg-slate-100 dark:bg-[#0b1220] text-slate-500 dark:text-[#64748b] text-sm h-11 px-4 flex items-center cursor-not-allowed"
+              >
+                {email}
+              </div>
+              {#if user?.email_confirmed_at}
+                <span
+                  class="shrink-0 inline-flex items-center px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-md"
+                >
+                  Đã xác thực
+                </span>
+              {:else}
+                <span
+                  class="shrink-0 inline-flex items-center px-2 py-1 text-xs font-bold text-amber-700 bg-amber-100 rounded-md"
+                >
+                  Chưa xác thực
+                </span>
+              {/if}
+            </div>
           </div>
 
           <!-- Phone -->
@@ -269,10 +248,14 @@
             </button>
           </div>
         </form>
-
-        <!-- Right side (optional) -->
-        <!-- Nếu bạn có phần bên phải (avatar / info), giữ nguyên hoặc thêm sau -->
       </div>
     </div>
   </div>
 </main>
+
+<style>
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+</style>
