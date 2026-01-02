@@ -1,19 +1,23 @@
 <script lang="ts">
   export let data: any;
+  export let form: any;
 
   const user = data.user;
   const profile = data.profile ?? {};
 
-  // hiển thị tên ngắn cho greeting
+  // short name for greeting
   const shortName = (name: string) => {
-    const s = (name ?? '').trim();
-    if (!s) return 'bạn';
+    const s = (name ?? "").trim();
+    if (!s) return "bạn";
     const parts = s.split(/\s+/);
     return parts[parts.length - 1];
   };
 
-  $: displayName = profile.full_name ?? user?.email?.split('@')?.[0] ?? 'bạn';
-  $: email = profile.email ?? user?.email ?? '';
+  $: displayName = profile.full_name ?? user?.email?.split("@")?.[0] ?? "bạn";
+  $: email = profile.email ?? user?.email ?? "";
+
+  // Use string directly for native date input (YYYY-MM-DD)
+  let birthdayString = profile.birthday ?? "";
 </script>
 
 <svelte:head>
@@ -37,16 +41,27 @@
         </p>
       </div>
 
-      {#if data?.error}
-        <div
-          class="p-4 mt-6 text-red-700 border border-red-200 rounded-lg bg-red-50"
-        >
-          {data.error}
+      {#if data?.error || (form && !form.ok)}
+        <div class="flex justify-center mt-6 px-4 text-center">
+          <div
+            class="p-3 w-fit border border-red-200 rounded-lg bg-red-50 text-red-700 text-sm shadow-sm"
+          >
+            {data?.error || form?.message}
+          </div>
+        </div>
+      {/if}
+
+      {#if form?.ok && form?.message}
+        <div class="flex justify-center mt-6 px-4 text-center">
+          <div
+            class="p-3 w-fit border border-green-200 rounded-lg bg-green-50 text-green-700 text-sm shadow-sm"
+          >
+            {form.message}
+          </div>
         </div>
       {/if}
 
       <div class="flex flex-col-reverse gap-10 mt-8 lg:flex-row">
-        <!-- Form -->
         <form class="flex flex-col flex-1 gap-6" method="POST">
           <!-- Username -->
           <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
@@ -59,11 +74,6 @@
               class="w-full min-w-0 text-base font-medium sm:flex-1 text-slate-900 dark:text-white"
             >
               {user?.email}
-              <span
-                class="inline-flex items-center px-2 py-1 ml-3 text-xs font-bold text-green-700 bg-green-100 rounded-md"
-              >
-                Đã đăng nhập
-              </span>
             </div>
           </div>
 
@@ -75,16 +85,91 @@
               >Tên</label
             >
             <input
-              class="w-full min-w-0 sm:flex-1 form-input rounded-lg border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a] text-slate-900 dark:text-white focus:border-primary focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
+              class="w-full min-w-0 sm:flex-1 form-input rounded-lg
+            border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a]
+            text-slate-900 dark:text-white focus:border-primary
+            focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
               type="text"
               name="full_name"
               id="full_name"
-              value={profile.full_name ?? ''}
+              value={profile.full_name ?? ""}
               placeholder="Nhập họ tên"
               autocomplete="name"
             />
           </div>
 
+          <!-- Gender -->
+          <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
+            <label
+              for=""
+              class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
+              >Giới tính</label
+            >
+            <div class="flex items-center gap-6">
+              <label class="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="male"
+                  checked={profile.gender === "male"}
+                  class="w-4 h-4
+                transition-colors border-gray-300 text-primary
+                focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                />
+                <span class="text-sm text-slate-700 dark:text-slate-300"
+                  >Nam</span
+                >
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="female"
+                  checked={profile.gender === "female"}
+                  class="w-4 h-4
+                transition-colors border-gray-300 text-primary
+                focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                />
+                <span class="text-sm text-slate-700 dark:text-slate-300"
+                  >Nữ</span
+                >
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="unknown"
+                  checked={profile.gender === "unknown" || !profile.gender}
+                  class="w-4 h-4 transition-colors border-gray-300 text-primary
+                focus:ring-primary dark:border-border-dark dark:bg-surface-dark"
+                />
+                <span class="text-sm text-slate-700 dark:text-slate-300"
+                  >Khác</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <!-- Birthday -->
+          <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
+            <label
+              for="birthday"
+              class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
+              >Ngày sinh</label
+            >
+            <div class="w-full sm:flex-1">
+              <input
+                type="date"
+                name="birthday"
+                id="birthday"
+                bind:value={birthdayString}
+                class="w-full max-w-[200px] min-w-0 form-input rounded-lg
+                          border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a]
+                          text-slate-900 dark:text-white focus:border-primary
+                          focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
+              />
+            </div>
+          </div>
           <!-- Email readonly -->
           <div class="grid gap-2 sm:grid-cols-[8rem_1fr] sm:items-center">
             <label
@@ -92,14 +177,26 @@
               class="w-full sm:w-32 text-slate-500 dark:text-[#92a4c9] text-sm font-medium"
               >Email</label
             >
-            <input
-              class="w-full min-w-0 sm:flex-1 form-input rounded-lg border-none bg-slate-100 dark:bg-[#0b1220] text-slate-500 dark:text-[#64748b] text-sm h-11 px-4 cursor-not-allowed"
-              disabled
-              name="email"
-              id="email"
-              value={email}
-              autocomplete="email"
-            />
+            <div class="flex items-center gap-3 w-full sm:flex-1">
+              <div
+                class="w-fit max-w-full truncate rounded-lg border-none bg-slate-100 dark:bg-[#0b1220] text-slate-500 dark:text-[#64748b] text-sm h-11 px-4 flex items-center cursor-not-allowed"
+              >
+                {email}
+              </div>
+              {#if user?.email_confirmed_at}
+                <span
+                  class="shrink-0 inline-flex items-center px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-md"
+                >
+                  Đã xác thực
+                </span>
+              {:else}
+                <span
+                  class="shrink-0 inline-flex items-center px-2 py-1 text-xs font-bold text-amber-700 bg-amber-100 rounded-md"
+                >
+                  Chưa xác thực
+                </span>
+              {/if}
+            </div>
           </div>
 
           <!-- Phone -->
@@ -110,11 +207,14 @@
               >SĐT</label
             >
             <input
-              class="w-full min-w-0 sm:flex-1 form-input rounded-lg border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a] text-slate-900 dark:text-white focus:border-primary focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
+              class="w-full min-w-0 sm:flex-1 form-input rounded-lg
+            border-slate-200 dark:border-[#2a3b5c] bg-white/80 dark:bg-[#0f172a]
+            text-slate-900 dark:text-white focus:border-primary
+            focus:ring-primary text-sm h-11 px-4 placeholder:text-slate-400"
               type="text"
               name="phone"
               id="phone"
-              value={profile.phone ?? ''}
+              value={profile.phone ?? ""}
               placeholder="VD: 0987654321"
               inputmode="tel"
               autocomplete="tel"
@@ -134,25 +234,28 @@
               name="address"
               id="address"
               placeholder="Nhập địa chỉ nhận hàng"
-              autocomplete="street-address">{profile.address ?? ''}</textarea
+              autocomplete="street-address">{profile.address ?? ""}</textarea
             >
           </div>
 
           <!-- Save -->
-          <div class="grid gap-2 mt-4 sm:grid-cols-[8rem_1fr] sm:items-center">
-            <div class="hidden sm:block"></div>
+          <div class="flex justify-center mt-6">
             <button
-              class="w-full px-8 py-3 font-bold text-white transition-all rounded-lg shadow-lg bg-primary hover:bg-primary/90 shadow-primary/30 active:scale-95 sm:w-auto sm:col-start-2"
+              class="px-10 py-2.5 font-bold text-white transition-all rounded-lg shadow-lg bg-primary hover:bg-primary/90 shadow-primary/30 active:scale-95 text-sm"
               formaction="?/updateProfile"
             >
               Lưu thay đổi
             </button>
           </div>
         </form>
-
-        <!-- Right side (optional) -->
-        <!-- Nếu bạn có phần bên phải (avatar / info), giữ nguyên hoặc thêm sau -->
       </div>
     </div>
   </div>
 </main>
+
+<style>
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+</style>

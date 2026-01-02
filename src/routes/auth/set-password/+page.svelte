@@ -1,38 +1,40 @@
 <!-- User đặt mật khẩu lần đầu (hoặc sau reset): -->
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import { createClient } from '@supabase/supabase-js';
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { createClient } from "@supabase/supabase-js";
   import {
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
-  } from '$env/static/public';
+  } from "$env/static/public";
 
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
-  let password = '';
-  let confirm = '';
+  let password = "";
+  let confirm = "";
   let loading = false;
-  let errorMsg = '';
-  let okMsg = '';
+  let errorMsg = "";
+  let okMsg = "";
 
   onMount(async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      await goto('/auth/login');
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      await goto("/auth/login");
     }
   });
 
   async function setPassword() {
-    errorMsg = '';
-    okMsg = '';
+    errorMsg = "";
+    okMsg = "";
 
     if (password.length < 6) {
-      errorMsg = 'Mật khẩu tối thiểu 6 ký tự.';
+      errorMsg = "Mật khẩu tối thiểu 6 ký tự.";
       return;
     }
     if (password !== confirm) {
-      errorMsg = 'Mật khẩu nhập lại không khớp.';
+      errorMsg = "Mật khẩu nhập lại không khớp.";
       return;
     }
 
@@ -41,11 +43,11 @@
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
-      okMsg = 'Đặt mật khẩu thành công!';
+      okMsg = "Đặt mật khẩu thành công!";
       // về account hoặc trang chủ
-      await goto('/account');
+      await goto("/account");
     } catch (e: any) {
-      errorMsg = e?.message ?? 'Có lỗi xảy ra';
+      errorMsg = e?.message ?? "Có lỗi xảy ra";
     } finally {
       loading = false;
     }
@@ -93,7 +95,7 @@
         on:click={setPassword}
         disabled={loading}
       >
-        {loading ? 'Đang lưu...' : 'Lưu mật khẩu'}
+        {loading ? "Đang lưu..." : "Lưu mật khẩu"}
       </button>
 
       {#if errorMsg}

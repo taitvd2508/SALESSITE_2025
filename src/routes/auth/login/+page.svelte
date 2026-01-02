@@ -1,45 +1,44 @@
 <script lang="ts">
-  import { supabase } from '$lib/supabase/client';
-  import { goto } from '$app/navigation';
-  import { invalidateAll } from '$app/navigation';
+  import { supabase } from "$lib/supabase/client";
+  import { goto } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
 
-  let email = '';
-  let password = '';
+  let email = "";
+  let password = "";
   let showPass = false;
 
   let loading = false;
-  let errorMsg = '';
+  let errorMsg = "";
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMsg = '';
+    errorMsg = "";
     loading = true;
 
     try {
-      console.log('submit login');
+      console.log("submit login");
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error || !data.session) {
         const AUTH_ERROR_MAP: Record<string, string> = {
-          'Invalid login credentials': 'Email hoặc mật khẩu không đúng',
-          'Email not confirmed': 'Email chưa được xác nhận',
+          "Invalid login credentials": "Email hoặc mật khẩu không đúng",
+          "Email not confirmed": "Email chưa được xác nhận",
         };
         errorMsg = error
-          ? (AUTH_ERROR_MAP[error.message] ?? 'Đăng nhập thất bại') // nếu có error thì
-          : 'Không tạo được phiên đăng nhập'; // còn ko thì
+          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại") // nếu có error thì
+          : "Không tạo được phiên đăng nhập"; // còn ko thì
         return;
       }
 
-      // ✅ redirect sau khi login OK
-      const { data: s } = await supabase.auth.getSession();
+      // redirect sau khi login success
       const next =
-        new URLSearchParams(window.location.search).get('next') ?? '/account';
-      await invalidateAll(); // cực quan trọng để SSR reload theo cookie mới // để header/layout refresh ngay.
+        new URLSearchParams(window.location.search).get("next") ?? "/account";
+      await invalidateAll(); //SSR reload theo cookie mới // để header/layout refresh ngay.
       await goto(next);
     } catch (err: any) {
-      errorMsg = err?.message ?? 'Đăng nhập thất bại';
+      errorMsg = err?.message ?? "Đăng nhập thất bại";
     } finally {
       loading = false;
     }
@@ -65,7 +64,7 @@
       <div
         class="absolute inset-0 bg-center bg-cover opacity-60 mix-blend-overlay"
         data-alt="futuristic technology setup with neon lights"
-        style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDX783tOa9vcL_Y4f7pxdJPNkmasFPWNIezoEl7x1RcoZ77Q5oBwx2GM_DiJsQh3rE6qVg1PpDGFGhTXFVN6uYs-vg-Sqd1vjK6dtif3Gv20PDROtoeEEGZaVoR2a7XYldFKmBQsXHaOQjm3o9_gIqYXDePSGZPtmLVeTJlH_cw-iq2LVUe2jSoFOuLfCukmrqfjLjNBF6mxLAASb6QXlQJ4BULq2kYc79hXCrfPRH7IMl3rMY01TXrkHdkm6TWc0KKpsqh2mdv3Q');"
+        style="background-image: url('https://elabcalarempslfrkwbx.supabase.co/storage/v1/object/public/products/login/login_page.png');"
       ></div>
 
       <div class="relative z-20 max-w-lg px-6 text-center md:text-left">
@@ -176,7 +175,7 @@
                 on:click={() => (showPass = !showPass)}
               >
                 <span class="material-symbols-outlined text-[20px]"
-                  >{showPass ? 'visibility_off' : 'visibility'}</span
+                  >{showPass ? "visibility_off" : "visibility"}</span
                 >
               </button>
             </div>
@@ -196,7 +195,7 @@
             type="submit"
             disabled={loading}
           >
-            <span>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+            <span>{loading ? "Đang đăng nhập..." : "Đăng nhập"}</span>
             <span class="text-sm material-symbols-outlined">login</span>
           </button>
         </form>

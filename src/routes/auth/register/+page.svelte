@@ -1,61 +1,107 @@
 <script lang="ts">
-  import { createClient } from '@supabase/supabase-js';
+  import { createClient } from "@supabase/supabase-js";
   import {
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
-  } from '$env/static/public';
-  import { goto } from '$app/navigation';
+  } from "$env/static/public";
+  import { enhance } from "$app/forms";
+  import { onMount, onDestroy } from "svelte";
+  import { goto, invalidateAll } from "$app/navigation";
+  import type { ActionData } from "./$types";
 
+  export let form: ActionData;
+
+  // Initialize Supabase client for client-side operations (like Resend)
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
-  let full_name = '';
-  let phone = '';
-  let email = '';
-  let password = '';
-  let confirm = '';
+  let loading = false;
+  let showPass = false;
+
+  // Form fields state (for preserving values on error)
+  // If form.values exists (from server return), use those, else defaults
+  $: email = form?.values?.email ?? "";
+  $: full_name = form?.values?.full_name ?? "";
+  $: phone = form?.values?.phone ?? "";
+  let password = "";
+  let confirm = "";
   let agree = false;
 
-  let showPass = false;
-  let loading = false;
-  let errorMsg = '';
-  let okMsg = '';
+  // Verification UI State
+  let verificationPending = false;
+  let timer = 60;
+  let timerInterval: any;
+  let pollingInterval: any; // Added polling interval
+  let resendLoading = false;
 
-  async function onSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    errorMsg = '';
-    okMsg = '';
+  // Update verificationPending if registration was successful
+  $: if (form?.success) {
+    verificationPending = true;
+    startTimer();
+    startPolling(); // Start polling when waiting for verification
+  }
 
-    if (!agree) {
-      errorMsg = 'Bạn cần đồng ý Điều khoản dịch vụ.';
-      return;
-    }
-    if (password.length < 6) {
-      errorMsg = 'Mật khẩu tối thiểu 6 ký tự.';
-      return;
-    }
-    if (password !== confirm) {
-      errorMsg = 'Xác nhận mật khẩu không khớp.';
-      return;
-    }
+  function startTimer() {
+    timer = 60;
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if (timer > 0) {
+        timer--;
+      } else {
+        clearInterval(timerInterval);
+      }
+    }, 1000);
+  }
 
-    loading = true;
+  // Poll for session status via server endpoint
+  function startPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(async () => {
+      try {
+        // Check status from server (which has access to httpOnly cookies set by auth callback)
+        const res = await fetch("/api/auth/status");
+        const { user } = await res.json();
+
+        if (user) {
+          // User verified and cookie is detected by server!
+          clearInterval(pollingInterval);
+          await invalidateAll(); // Refresh all load functions (SiteHeader will update)
+          await goto("/"); // Redirect to home
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 3000); // Check every 3 seconds
+  }
+
+  async function handleResend() {
+    if (timer > 0 || !form?.email) return;
+
+    resendLoading = true;
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: form.email,
         options: {
-          data: { full_name, phone },
+          // Explicitly set the redirect URL for resend as well
+          emailRedirectTo: window.location.origin + "/auth/callback",
         },
       });
       if (error) throw error;
 
-      okMsg = 'Đăng ký thành công. Vui lòng vào Email để xác nhận!';
+      // Restart timer on success
+      startTimer();
     } catch (err: any) {
-      errorMsg = err?.message ?? 'Đăng ký thất bại';
+      console.error("Resend error:", err);
+      alert(err.message || "Failed to resend email");
     } finally {
-      loading = false;
+      resendLoading = false;
     }
   }
+
+  onDestroy(() => {
+    if (timerInterval) clearInterval(timerInterval);
+    if (pollingInterval) clearInterval(pollingInterval);
+  });
 </script>
 
 <svelte:head>
@@ -86,238 +132,317 @@
           </p>
         </div>
 
-        <form class="flex flex-col gap-5" on:submit={onSubmit}>
-          <div class="flex flex-col gap-5 md:flex-row">
-            <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white">Email</span>
-              <div class="relative">
-                <input
-                  class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                  placeholder="example@email.com"
-                  type="email"
-                  bind:value={email}
-                  required
-                />
-                <span
-                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >mail</span
-                >
-              </div>
-            </label>
-          </div>
-
-          <div class="flex flex-col gap-5 md:flex-row">
-            <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white">Họ và tên</span>
-              <div class="relative">
-                <input
-                  class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                  placeholder="Nguyễn Văn A"
-                  type="text"
-                  bind:value={full_name}
-                  required
-                />
-                <span
-                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >person</span
-                >
-              </div>
-            </label>
-
-            <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white"
-                >Số điện thoại</span
-              >
-              <div class="relative">
-                <input
-                  class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                  placeholder="0911.111.222"
-                  type="tel"
-                  bind:value={phone}
-                  required
-                />
-                <span
-                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >phone</span
-                >
-              </div>
-            </label>
-          </div>
-
-          <div class="flex flex-col gap-5 md:flex-row">
-            <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white">Mật khẩu</span>
-              <div class="relative">
-                {#if showPass}
-                  <input
-                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                    placeholder="••••••••"
-                    type="text"
-                    bind:value={password}
-                    required
-                  />
-                {:else}
-                  <input
-                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                    placeholder="••••••••"
-                    type="password"
-                    bind:value={password}
-                    required
-                  />
-                {/if}
-                <span
-                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >lock</span
-                >
-                <button
-                  class="absolute right-3 top-3 text-[#92a4c9] hover:text-white transition-colors"
-                  type="button"
-                  on:click={() => (showPass = !showPass)}
-                >
-                  <span class="material-symbols-outlined text-[20px]"
-                    >{showPass ? 'visibility_off' : 'visibility'}</span
-                  >
-                </button>
-              </div>
-            </label>
-
-            <label class="flex flex-col flex-1">
-              <span class="pb-2 text-sm font-medium text-white"
-                >Xác nhận mật khẩu</span
-              >
-              <div class="relative">
-                {#if showPass}
-                  <input
-                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                    placeholder="••••••••"
-                    type="text"
-                    bind:value={confirm}
-                    required
-                  />
-                {:else}
-                  <input
-                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
-                    placeholder="••••••••"
-                    type="password"
-                    bind:value={confirm}
-                    required
-                  />
-                {/if}
-                <span
-                  class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
-                  >lock_reset</span
-                >
-              </div>
-            </label>
-          </div>
-
-          <div class="py-2">
-            <label class="flex items-start gap-3 cursor-pointer group">
-              <div class="relative flex items-center mt-0.5">
-                <input
-                  class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-[#324467] bg-transparent checked:border-primary checked:bg-primary transition-all hover:border-[#4b6699]"
-                  type="checkbox"
-                  bind:checked={agree}
-                />
-                <span
-                  class="material-symbols-outlined pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[16px] text-white opacity-0 peer-checked:opacity-100 transition-opacity"
-                  >check</span
-                >
-              </div>
-              <span
-                class="text-[#92a4c9] text-sm leading-tight group-hover:text-white transition-colors"
-              >
-                Tôi đã đọc và đồng ý với
-                <!-- svelte-ignore a11y-invalid-attribute -->
-                <a class="underline text-primary hover:text-blue-400" href="#"
-                  >Điều khoản dịch vụ</a
-                >
-                và
-                <!-- svelte-ignore a11y-invalid-attribute -->
-                <a class="underline text-primary hover:text-blue-400" href="#"
-                  >Chính sách bảo mật</a
-                >
-                của TT Store.
-              </span>
-            </label>
-          </div>
-
-          {#if errorMsg}
-            <div
-              class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
-            >
-              {errorMsg}
-            </div>
-          {/if}
-          {#if okMsg}
-            <div
-              class="px-4 py-3 text-sm text-green-200 border rounded-xl border-green-500/40 bg-green-500/10"
-            >
-              {okMsg}
-            </div>
-          {/if}
-
-          <button
-            class="w-full bg-primary hover:bg-blue-600 text-white h-12 rounded-lg font-bold text-base tracking-wide transition-all shadow-[0_0_20px_rgba(17,82,212,0.3)] hover:shadow-[0_0_30px_rgba(17,82,212,0.5)] mt-2 disabled:opacity-60"
-            disabled={loading}
+        {#if verificationPending}
+          <!-- Verification UI -->
+          <div
+            class="flex flex-col gap-6 p-6 rounded-2xl bg-[#192233] border border-[#324467] shadow-xl"
           >
-            {loading ? 'Đang tạo...' : 'Đăng ký tài khoản'}
-          </button>
+            <div class="flex flex-col items-center text-center gap-4">
+              <div class="p-4 rounded-full bg-primary/10 text-primary mb-2">
+                <span class="material-symbols-outlined text-4xl"
+                  >mark_email_unread</span
+                >
+              </div>
+              <h2 class="text-2xl font-bold text-white">
+                Kiểm tra email của bạn
+              </h2>
+              <p class="text-[#92a4c9] text-base leading-relaxed max-w-md">
+                An email with a verification link has been sent to <strong
+                  >{form?.email}</strong
+                >. Please use it to login.
+              </p>
+            </div>
 
-          <!-- Divider -->
-          <div class="relative flex items-center py-2">
-            <div class="flex-grow border-t border-[#324467]"></div>
-            <span class="flex-shrink-0 mx-4 text-[#92a4c9] text-sm"
-              >Hoặc đăng ký bằng</span
+            <div
+              class="p-4 rounded-lg bg-[#232f48]/50 border border-[#324467]/50"
             >
-            <div class="flex-grow border-t border-[#324467]"></div>
-          </div>
-          <!-- Social Login -->
-          <div class="grid grid-cols-2 gap-4">
+              <p class="text-sm text-[#92a4c9] text-center">
+                Haven't received any email yet? Please check the spam or Resend
+                after {timer} seconds.
+              </p>
+            </div>
+
             <button
-              class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
-              type="button"
+              class="w-full h-12 rounded-lg font-bold text-base tracking-wide transition-all border border-primary text-primary hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-primary disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              on:click={handleResend}
+              disabled={timer > 0 || resendLoading}
             >
-              <svg
-                aria-hidden="true"
-                class="w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
+              {#if resendLoading}
+                <span
+                  class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+                ></span>
+                Đang gửi...
+              {:else if timer > 0}
+                Resend in {timer}s
+              {:else}
+                <span class="material-symbols-outlined text-[20px]"
+                  >refresh</span
+                >
+                Resend Email
+              {/if}
+            </button>
+
+            <div class="flex items-center justify-center pt-2">
+              <a
+                href="/auth/login"
+                class="text-sm font-medium text-[#92a4c9] hover:text-white transition-colors flex items-center gap-1"
               >
-                <path
-                  d="M12.0003 20.45c-4.6667 0-8.4503-3.7836-8.4503-8.45s3.7836-8.45 8.4503-8.45c2.2818 0 4.3485.8364 5.9636 2.2145l-1.92 1.92c-.9981-.96-2.3781-1.5545-3.9054-1.5545-3.3218 0-6.0218 2.7-6.0218 6.0218s2.7 6.0218 6.0218 6.0218c2.8254 0 5.2909-1.8982 5.8636-4.6255h-5.8636v-2.4272h8.3345c.1255.6163.1855 1.2545.1855 1.92 0 4.7073-3.1582 8.45-8.6582 8.45z"
+                <span class="material-symbols-outlined text-[16px]"
+                  >arrow_back</span
+                >
+                Back to Login
+              </a>
+            </div>
+          </div>
+        {:else}
+          <!-- Registration Form -->
+          <form
+            class="flex flex-col gap-5"
+            method="POST"
+            use:enhance={() => {
+              loading = true;
+              return async ({ update }) => {
+                await update();
+                loading = false;
+              };
+            }}
+          >
+            <div class="flex flex-col gap-5 md:flex-row">
+              <label class="flex flex-col flex-1">
+                <span class="pb-2 text-sm font-medium text-white">Email</span>
+                <div class="relative">
+                  <input
+                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                    placeholder="example@email.com"
+                    type="email"
+                    name="email"
+                    value={email}
+                    required
+                  />
+                  <span
+                    class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                    >mail</span
+                  >
+                </div>
+              </label>
+            </div>
+
+            <div class="flex flex-col gap-5 md:flex-row">
+              <label class="flex flex-col flex-1">
+                <span class="pb-2 text-sm font-medium text-white"
+                  >Họ và tên</span
+                >
+                <div class="relative">
+                  <input
+                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                    placeholder="Nguyễn Văn A"
+                    type="text"
+                    name="full_name"
+                    value={full_name}
+                    required
+                  />
+                  <span
+                    class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                    >person</span
+                  >
+                </div>
+              </label>
+
+              <label class="flex flex-col flex-1">
+                <span class="pb-2 text-sm font-medium text-white"
+                  >Số điện thoại</span
+                >
+                <div class="relative">
+                  <input
+                    class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-4 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                    placeholder="0911.111.222"
+                    type="tel"
+                    name="phone"
+                    value={phone}
+                    required
+                  />
+                  <span
+                    class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                    >phone</span
+                  >
+                </div>
+              </label>
+            </div>
+
+            <div class="flex flex-col gap-5 md:flex-row">
+              <label class="flex flex-col flex-1">
+                <span class="pb-2 text-sm font-medium text-white">Mật khẩu</span
+                >
+                <div class="relative">
+                  {#if showPass}
+                    <input
+                      class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                      placeholder="••••••••"
+                      type="text"
+                      name="password"
+                      bind:value={password}
+                      required
+                    />
+                  {:else}
+                    <input
+                      class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                      placeholder="••••••••"
+                      type="password"
+                      name="password"
+                      bind:value={password}
+                      required
+                    />
+                  {/if}
+                  <span
+                    class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                    >lock</span
+                  >
+                  <button
+                    class="absolute right-3 top-3 text-[#92a4c9] hover:text-white transition-colors"
+                    type="button"
+                    on:click={() => (showPass = !showPass)}
+                  >
+                    <span class="material-symbols-outlined text-[20px]"
+                      >{showPass ? "visibility_off" : "visibility"}</span
+                    >
+                  </button>
+                </div>
+              </label>
+
+              <label class="flex flex-col flex-1">
+                <span class="pb-2 text-sm font-medium text-white"
+                  >Xác nhận mật khẩu</span
+                >
+                <div class="relative">
+                  {#if showPass}
+                    <input
+                      class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                      placeholder="••••••••"
+                      type="text"
+                      name="confirm"
+                      bind:value={confirm}
+                      required
+                    />
+                  {:else}
+                    <input
+                      class="w-full rounded-lg text-white border border-[#324467] bg-[#192233] focus:border-primary focus:ring-1 focus:ring-primary h-12 pl-11 pr-10 text-base placeholder:text-[#92a4c9]/50 transition-colors"
+                      placeholder="••••••••"
+                      type="password"
+                      name="confirm"
+                      bind:value={confirm}
+                      required
+                    />
+                  {/if}
+                  <span
+                    class="material-symbols-outlined absolute left-3.5 top-3 text-[#92a4c9]"
+                    >lock_reset</span
+                  >
+                </div>
+              </label>
+            </div>
+
+            <div class="py-2">
+              <label class="flex items-start gap-3 cursor-pointer group">
+                <div class="relative flex items-center mt-0.5">
+                  <input
+                    class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-[#324467] bg-transparent checked:border-primary checked:bg-primary transition-all hover:border-[#4b6699]"
+                    type="checkbox"
+                    name="agree"
+                    bind:checked={agree}
+                  />
+                  <span
+                    class="material-symbols-outlined pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[16px] text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                    >check</span
+                  >
+                </div>
+                <span
+                  class="text-[#92a4c9] text-sm leading-tight group-hover:text-white transition-colors"
+                >
+                  Tôi đã đọc và đồng ý với
+                  <!-- svelte-ignore a11y-invalid-attribute -->
+                  <a class="underline text-primary hover:text-blue-400" href="#"
+                    >Điều khoản dịch vụ</a
+                  >
+                  và
+                  <!-- svelte-ignore a11y-invalid-attribute -->
+                  <a class="underline text-primary hover:text-blue-400" href="#"
+                    >Chính sách bảo mật</a
+                  >
+                  của TT Store.
+                </span>
+              </label>
+            </div>
+
+            {#if form?.error}
+              <div
+                class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
+              >
+                {form.error}
+              </div>
+            {/if}
+
+            <button
+              class="w-full bg-primary hover:bg-blue-600 text-white h-12 rounded-lg font-bold text-base tracking-wide transition-all shadow-[0_0_20px_rgba(17,82,212,0.3)] hover:shadow-[0_0_30px_rgba(17,82,212,0.5)] mt-2 disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? "Đang tạo..." : "Đăng ký tài khoản"}
+            </button>
+
+            <!-- Divider -->
+            <div class="relative flex items-center py-2">
+              <div class="flex-grow border-t border-[#324467]"></div>
+              <span class="flex-shrink-0 mx-4 text-[#92a4c9] text-sm"
+                >Hoặc đăng ký bằng</span
+              >
+              <div class="flex-grow border-t border-[#324467]"></div>
+            </div>
+            <!-- Social Login -->
+            <div class="grid grid-cols-2 gap-4">
+              <button
+                class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
+                type="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="w-5 h-5"
                   fill="currentColor"
-                ></path>
-              </svg>
-              <span class="text-sm font-medium">Google</span>
-            </button>
-            <button
-              class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
-              type="button"
-            >
-              <svg
-                aria-hidden="true"
-                class="h-5 w-5 text-[#1877F2]"
-                fill="currentColor"
-                viewBox="0 0 24 24"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12.0003 20.45c-4.6667 0-8.4503-3.7836-8.4503-8.45s3.7836-8.45 8.4503-8.45c2.2818 0 4.3485.8364 5.9636 2.2145l-1.92 1.92c-.9981-.96-2.3781-1.5545-3.9054-1.5545-3.3218 0-6.0218 2.7-6.0218 6.0218s2.7 6.0218 6.0218 6.0218c2.8254 0 5.2909-1.8982 5.8636-4.6255h-5.8636v-2.4272h8.3345c.1255.6163.1855 1.2545.1855 1.92 0 4.7073-3.1582 8.45-8.6582 8.45z"
+                    fill="currentColor"
+                  ></path>
+                </svg>
+                <span class="text-sm font-medium">Google</span>
+              </button>
+              <button
+                class="flex items-center justify-center gap-2 h-12 rounded-lg bg-[#232f48] hover:bg-[#2d3b55] border border-[#324467] text-white transition-colors"
+                type="button"
               >
-                <path
-                  d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
-                ></path>
-              </svg>
-              <span class="text-sm font-medium">Facebook</span>
-            </button>
-          </div>
+                <svg
+                  aria-hidden="true"
+                  class="h-5 w-5 text-[#1877F2]"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                  ></path>
+                </svg>
+                <span class="text-sm font-medium">Facebook</span>
+              </button>
+            </div>
 
-          <!-- Sign In Link -->
-          <p class="text-center text-[#92a4c9] mt-2">
-            Bạn đã có tài khoản?
-            <a
-              class="font-bold transition-colors text-primary hover:text-blue-400"
-              href="/auth/login">Đăng nhập ngay</a
-            >
-          </p>
-        </form>
+            <!-- Sign In Link -->
+            <p class="text-center text-[#92a4c9] mt-2">
+              Bạn đã có tài khoản?
+              <a
+                class="font-bold transition-colors text-primary hover:text-blue-400"
+                href="/auth/login">Đăng nhập ngay</a
+              >
+            </p>
+          </form>
+        {/if}
       </div>
 
       <!-- Right column -->
