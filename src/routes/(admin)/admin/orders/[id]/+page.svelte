@@ -1,242 +1,217 @@
+<!-- src/routes/(admin)/admin/orders/[id]/+page.svelte -->
+<script lang="ts">
+  import { enhance, applyAction } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
+
+  export let data: any;
+  export let form: any;
+
+  const formatVND = (n: any) =>
+    new Intl.NumberFormat('vi-VN').format(Number(n ?? 0)) + ' ₫';
+
+  const cover = (imgs: string[] | null | undefined) =>
+    imgs?.[0] ?? '/images/placeholder-product.png';
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const enhanceUpdate = (node: HTMLFormElement) =>
+    enhance(node, () => {
+      return async ({ result, update }) => {
+        await update();
+        await applyAction(result);
+        await invalidateAll();
+      };
+    });
+
+  function printInvoice() {
+    // _blank: Mở tab / cửa sổ mới, _self: Mở trong tab hiện tại (mặc định)
+    window.open(`/admin/orders/${data.order.id}/invoice`, '_blank'); // nếu muốn download thì thêm ?download=1, ko auto print thì ?print=0
+  }
+</script>
+
 <svelte:head>
-  <title>Chi tiết đơn hàng TT STORE</title>
+  <title>Admin - Order Details</title>
 </svelte:head>
 
-<main class="flex-grow">
-<div class="layout-container flex h-full grow flex-col">
-<div class="px-6 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
-<div class="layout-content-container flex flex-col max-w-[1200px] flex-1">
-<!-- Breadcrumbs -->
-<div class="flex flex-wrap gap-2 py-4 text-sm">
-<a class="text-[#92a4c9] hover:text-white transition-colors font-medium leading-normal" href="#">Trang chủ</a>
-<span class="text-[#92a4c9] font-medium leading-normal">/</span>
-<a class="text-[#92a4c9] hover:text-white transition-colors font-medium leading-normal" href="#">Tài khoản</a>
-<span class="text-[#92a4c9] font-medium leading-normal">/</span>
-<a class="text-[#92a4c9] hover:text-white transition-colors font-medium leading-normal" href="#">Lịch sử đơn hàng</a>
-<span class="text-[#92a4c9] font-medium leading-normal">/</span>
-<span class="text-white font-medium leading-normal">Chi tiết đơn hàng #TTS-8823</span>
+<div class="flex-1 p-4 overflow-y-auto md:p-8">
+  <div class="max-w-[1100px] mx-auto flex flex-col gap-6">
+    {#if data.error}
+      <div
+        class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
+      >
+        {data.error}
+      </div>
+    {:else}
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-2xl font-black text-white">
+            Đơn hàng #{data.order.id}
+          </div>
+          <div class="text-[#92a4c9] text-sm mt-1">
+            Tạo lúc {formatDate(data.order.created_at)}
+          </div>
+        </div>
+
+        <a
+          href="/admin/orders"
+          class="px-4 py-2 rounded-lg bg-surface-dark border border-[#232f48] text-white hover:border-primary/60 transition-colors"
+        >
+          ← Danh sách
+        </a>
+      </div>
+
+      {#if form?.message}
+        <div
+          class="px-4 py-3 text-sm border text-emerald-200 rounded-xl border-emerald-500/40 bg-emerald-500/10"
+        >
+          {form.message}
+        </div>
+      {/if}
+      {#if form?.message && !form?.ok}
+        <div
+          class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
+        >
+          {form.message}
+        </div>
+      {/if}
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- left -->
+        <div class="flex flex-col gap-4 lg:col-span-2">
+          <div class="bg-surface-dark rounded-2xl border border-[#232f48] p-5">
+            <div class="mb-3 font-bold text-white">Sản phẩm</div>
+
+            <div class="flex flex-col gap-3">
+              {#each data.items as it}
+                <div
+                  class="flex items-center gap-4 bg-[#111722] border border-[#232f48] rounded-xl p-3"
+                >
+                  <img
+                    class="w-14 h-14 rounded-lg object-cover border border-[#232f48] bg-[#0b0f16]"
+                    src={cover(it.product?.images)}
+                    alt={it.product?.name}
+                  />
+                  <div class="flex-1">
+                    <div class="font-semibold text-white line-clamp-1">
+                      {it.product?.name ?? 'Sản phẩm'}
+                    </div>
+                    <div class="text-[#92a4c9] text-xs">x{it.quantity}</div>
+                  </div>
+                  <div class="font-bold text-white">{formatVND(it.price)}</div>
+                </div>
+              {/each}
+            </div>
+
+            <div
+              class="flex items-center justify-between mt-4 pt-4 border-t border-[#232f48]"
+            >
+              <span class="text-[#92a4c9] text-sm">Tổng tiền</span>
+              <span class="text-xl font-black text-white"
+                >{formatVND(data.order.total_price)}</span
+              >
+            </div>
+          </div>
+
+          <div class="bg-surface-dark rounded-2xl border border-[#232f48] p-5">
+            <div class="mb-3 font-bold text-white">Thông tin giao hàng</div>
+            <div class="text-[#92a4c9] text-sm space-y-2">
+              <div>
+                <span class="text-white/90">Họ tên:</span>
+                {data.order.full_name}
+              </div>
+              <div>
+                <span class="text-white/90">SĐT:</span>
+                {data.order.phone}
+              </div>
+              <div>
+                <span class="text-white/90">Email:</span>
+                {data.order.email ?? '—'}
+              </div>
+              <div>
+                <span class="text-white/90">Địa chỉ:</span>
+                {data.order.address}
+              </div>
+              {#if data.order.note}
+                <div>
+                  <span class="text-white/90">Ghi chú:</span>
+                  {data.order.note}
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+
+        <!-- right -->
+        <div class="flex flex-col gap-4 lg:col-span-1">
+          <div class="bg-surface-dark rounded-2xl border border-[#232f48] p-5">
+            <div class="mb-3 font-bold text-white">Trạng thái</div>
+
+            <form
+              method="POST"
+              action="?/updateStatus"
+              use:enhanceUpdate
+              class="flex flex-col gap-3"
+            >
+              <input type="hidden" name="id" value={data.order.id} />
+              <select
+                class="w-full rounded-lg border border-[#324467] bg-[#192233] text-white h-11 px-3"
+                name="status_id"
+                value={data.order.status_id}
+              >
+                {#each data.statuses as s}
+                  <option value={s.id}>{s.name}</option>
+                {/each}
+              </select>
+
+              <button
+                class="w-full font-bold text-white transition-colors rounded-lg h-11 bg-primary hover:bg-primary/90"
+                type="submit"
+              >
+                Cập nhật
+              </button>
+            </form>
+
+            <div
+              class="mt-4 pt-4 border-t border-[#232f48] text-sm text-[#92a4c9]"
+            >
+              <div>
+                Hiện tại: <span class="font-semibold text-white"
+                  >{data.order.status?.name ?? '—'}</span
+                >
+              </div>
+              <div class="mt-1">
+                Thanh toán: <span class="font-semibold text-white"
+                  >{data.order.method?.name ?? '—'}</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Optional: invoice later -->
+          <div class="bg-surface-dark rounded-2xl border border-[#232f48] p-5">
+            <div class="mb-2 font-bold text-white">Hóa đơn</div>
+            <button
+              class="flex items-center justify-center w-full gap-2 font-bold transition-colors rounded-lg h-11 bg-primary hover:bg-primary/90"
+              on:click={printInvoice}
+            >
+              <span class="material-symbols-outlined"> print</span>
+              In hóa đơn
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
 </div>
-<!-- Page Heading & Order Info -->
-<div class="flex flex-wrap justify-between items-end gap-4 py-4 border-b border-[#232f48] mb-8">
-<div class="flex min-w-72 flex-col gap-2">
-<div class="flex items-center gap-3">
-<h1 class="text-white text-3xl font-bold leading-tight">Đơn hàng #TTS-8823</h1>
-<span class="bg-primary/20 text-primary px-3 py-1 rounded text-xs font-bold uppercase tracking-wider">Đang giao hàng</span>
-</div>
-<p class="text-[#92a4c9] text-sm font-normal">Ngày đặt: 24/10/2023 - 14:30</p>
-</div>
-<div class="flex gap-3">
-<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-[#232f48] hover:bg-[#2d3b55] transition-colors text-white text-sm font-medium gap-2">
-<span class="material-symbols-outlined text-[18px]">receipt</span>
-<span class="truncate">In hóa đơn</span>
-</button>
-<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-[#232f48] hover:bg-[#2d3b55] transition-colors text-white text-sm font-medium gap-2">
-<span class="material-symbols-outlined text-[18px]">support_agent</span>
-<span class="truncate">Liên hệ hỗ trợ</span>
-</button>
-</div>
-</div>
-<!-- Timeline -->
-<div class="w-full bg-[#161b26] rounded-xl p-8 mb-8 border border-[#232f48]">
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-<!-- Step 1: Completed -->
-<div class="flex flex-col items-center gap-3 relative">
-<div class="flex items-center justify-center w-full">
-<div class="h-[2px] w-full bg-primary flex-1"></div> <!-- Left Line (Invisible/Active) -->
-<div class="size-10 rounded-full bg-primary flex items-center justify-center text-white z-10 shrink-0">
-<span class="material-symbols-outlined">check</span>
-</div>
-<div class="h-[2px] w-full bg-primary flex-1"></div> <!-- Right Line -->
-</div>
-<div class="text-center">
-<p class="text-white text-sm font-bold">Đã đặt hàng</p>
-<p class="text-[#92a4c9] text-xs">14:30 24/10</p>
-</div>
-</div>
-<!-- Step 2: Completed -->
-<div class="flex flex-col items-center gap-3 relative">
-<div class="flex items-center justify-center w-full">
-<div class="h-[2px] w-full bg-primary flex-1"></div>
-<div class="size-10 rounded-full bg-primary flex items-center justify-center text-white z-10 shrink-0">
-<span class="material-symbols-outlined">assignment_turned_in</span>
-</div>
-<div class="h-[2px] w-full bg-primary flex-1"></div>
-</div>
-<div class="text-center">
-<p class="text-white text-sm font-bold">Đã xác nhận</p>
-<p class="text-[#92a4c9] text-xs">15:45 24/10</p>
-</div>
-</div>
-<!-- Step 3: Active (Shipping) -->
-<div class="flex flex-col items-center gap-3 relative">
-<div class="flex items-center justify-center w-full">
-<div class="h-[2px] w-full bg-primary flex-1"></div>
-<div class="size-12 rounded-full ring-4 ring-primary/20 bg-primary flex items-center justify-center text-white z-10 shrink-0 shadow-[0_0_15px_rgba(17,82,212,0.6)]">
-<span class="material-symbols-outlined">local_shipping</span>
-</div>
-<div class="h-[2px] w-full bg-[#232f48] flex-1"></div>
-</div>
-<div class="text-center">
-<p class="text-primary text-base font-bold">Đang giao hàng</p>
-<p class="text-[#92a4c9] text-xs">Đang vận chuyển</p>
-</div>
-</div>
-<!-- Step 4: Pending -->
-<div class="flex flex-col items-center gap-3 relative">
-<div class="flex items-center justify-center w-full">
-<div class="h-[2px] w-full bg-[#232f48] flex-1"></div>
-<div class="size-10 rounded-full bg-[#232f48] text-[#92a4c9] flex items-center justify-center z-10 shrink-0">
-<span class="material-symbols-outlined">inventory_2</span>
-</div>
-<div class="h-[2px] w-full bg-[#232f48] flex-1"></div>
-</div>
-<div class="text-center">
-<p class="text-[#92a4c9] text-sm font-medium">Giao hàng thành công</p>
-<p class="text-[#92a4c9] text-xs opacity-0">Pending</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Customer & Order Info Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-<!-- Address -->
-<div class="bg-[#161b26] p-6 rounded-xl border border-[#232f48] flex flex-col gap-4">
-<h3 class="text-white text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">location_on</span>
-                                Địa chỉ nhận hàng
-                            </h3>
-<div class="flex flex-col gap-1 text-[#92a4c9] text-sm leading-relaxed">
-<p class="text-white font-medium text-base">Nguyễn Văn A</p>
-<p>(+84) 905 123 456</p>
-<p>123 Đường Nguyễn Văn Linh, Phường Nam Dương, Quận Hải Châu, Đà Nẵng</p>
-</div>
-</div>
-<!-- Payment -->
-<div class="bg-[#161b26] p-6 rounded-xl border border-[#232f48] flex flex-col gap-4">
-<h3 class="text-white text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">credit_card</span>
-                                Thanh toán
-                            </h3>
-<div class="flex flex-col gap-2 text-[#92a4c9] text-sm">
-<p>Thanh toán qua thẻ tín dụng</p>
-<div class="flex items-center gap-2 text-white">
-<span class="material-symbols-outlined">payments</span>
-<span>Visa **** 4242</span>
-</div>
-<p class="text-green-500 font-medium text-xs mt-1 bg-green-500/10 w-fit px-2 py-1 rounded">Đã thanh toán</p>
-</div>
-</div>
-<!-- Delivery Method -->
-<div class="bg-[#161b26] p-6 rounded-xl border border-[#232f48] flex flex-col gap-4">
-<h3 class="text-white text-lg font-bold flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">local_shipping</span>
-                                Vận chuyển
-                            </h3>
-<div class="flex flex-col gap-2 text-[#92a4c9] text-sm">
-<p>Giao hàng nhanh (GHN)</p>
-<p>Mã vận đơn: <span class="text-white font-mono">GHN88239912</span></p>
-<a class="text-primary hover:underline text-xs mt-1 inline-flex items-center gap-1" href="#">
-                                    Xem hành trình
-                                    <span class="material-symbols-outlined text-[14px]">open_in_new</span>
-</a>
-</div>
-</div>
-</div>
-<!-- Product List -->
-<div class="bg-[#161b26] rounded-xl border border-[#232f48] overflow-hidden mb-8">
-<div class="px-6 py-4 border-b border-[#232f48]">
-<h3 class="text-white text-lg font-bold">Sản phẩm trong đơn hàng</h3>
-</div>
-<!-- Table Header (Desktop) -->
-<div class="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-[#111722] text-[#92a4c9] text-sm font-medium">
-<div class="col-span-6">Sản phẩm</div>
-<div class="col-span-2 text-center">Đơn giá</div>
-<div class="col-span-2 text-center">Số lượng</div>
-<div class="col-span-2 text-right">Tạm tính</div>
-</div>
-<!-- Item 1 -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-6 border-b border-[#232f48] items-center hover:bg-[#1c222e] transition-colors">
-<div class="col-span-12 md:col-span-6 flex gap-4">
-<div class="w-20 h-20 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden p-2">
-<img class="object-cover h-full w-full" data-alt="Macbook Pro on a wooden desk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3OM5qHMKYdaE8Y0dOhW3Ib0vAuAuqwGaYRjbJriyIAm3OYZ87botZGVvTMc_jaJ3NITtbboaPxjfuTpHC9MCMBvWE4U01G3ixIo2c3y0idd9LPN8eA0Xk9bFAbf7kgMRVUY3Iy6x3Qsd-LsoxnsnFIRQozJcCbIJYo4knFvHahvAZXd_mpxkoA3or8u45y7rYYYE8Nmi4H9Y8eLW14dIvIAsgRfqlsfngN-nrEajhd1fVEworakWI2FTqHslvMyD8bkRtudOtvw"/>
-</div>
-<div class="flex flex-col justify-center">
-<h4 class="text-white font-bold text-base">MacBook Pro 16 inch M3 Max</h4>
-<p class="text-[#92a4c9] text-sm">Space Black | 36GB RAM | 1TB SSD</p>
-<p class="text-[#92a4c9] text-xs mt-1">Bảo hành 12 tháng chính hãng</p>
-</div>
-</div>
-<div class="col-span-4 md:col-span-2 flex md:justify-center items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Đơn giá:</span>
-<span class="text-white font-medium">89.990.000₫</span>
-</div>
-<div class="col-span-4 md:col-span-2 flex md:justify-center items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Số lượng:</span>
-<span class="text-white">x1</span>
-</div>
-<div class="col-span-4 md:col-span-2 flex justify-end items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Tạm tính:</span>
-<span class="text-white font-bold">89.990.000₫</span>
-</div>
-</div>
-<!-- Item 2 -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-6 border-b border-[#232f48] items-center hover:bg-[#1c222e] transition-colors">
-<div class="col-span-12 md:col-span-6 flex gap-4">
-<div class="w-20 h-20 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden p-2">
-<img class="object-cover h-full w-full" data-alt="Mechanical gaming mouse with RGB lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABJVNOxQcVJcYGvUYrNX3kglqAxqg3YoTWeaV9h_X_L1QpZLTeA-0JFgzIN8AsyvyUS5FqUICR06FKNbjEqtTj4DFAT6gN5SBAWMKsxZYF4XaP4f92uXvfo_ejXh9UTPvME1sW1Gvewgl4pwYEOJ1a3toH0d7FclosQ_oG-xjjFb6vPEVKGLjWfDxmi-YJVqFJO-s_DEMwydUaIdEojwso0cMhbzOtko3LFTzO1wK32mLrP-5Jc4XiqFjWYfueHmie2kWYVsy3tg"/>
-</div>
-<div class="flex flex-col justify-center">
-<h4 class="text-white font-bold text-base">Chuột Gaming Logitech G Pro X</h4>
-<p class="text-[#92a4c9] text-sm">Superlight 2 | White</p>
-</div>
-</div>
-<div class="col-span-4 md:col-span-2 flex md:justify-center items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Đơn giá:</span>
-<span class="text-white font-medium">3.290.000₫</span>
-</div>
-<div class="col-span-4 md:col-span-2 flex md:justify-center items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Số lượng:</span>
-<span class="text-white">x1</span>
-</div>
-<div class="col-span-4 md:col-span-2 flex justify-end items-center">
-<span class="text-[#92a4c9] md:hidden mr-2">Tạm tính:</span>
-<span class="text-white font-bold">3.290.000₫</span>
-</div>
-</div>
-</div>
-<!-- Summary & Actions -->
-<div class="flex flex-col md:flex-row justify-end gap-8 mb-12">
-<!-- Summary Card -->
-<div class="w-full md:w-1/3 bg-[#161b26] rounded-xl border border-[#232f48] p-6 flex flex-col gap-3">
-<div class="flex justify-between items-center text-[#92a4c9] text-sm">
-<span>Tổng tiền hàng</span>
-<span class="text-white">93.280.000₫</span>
-</div>
-<div class="flex justify-between items-center text-[#92a4c9] text-sm">
-<span>Phí vận chuyển</span>
-<span class="text-white">50.000₫</span>
-</div>
-<div class="flex justify-between items-center text-[#92a4c9] text-sm">
-<span>Giảm giá vận chuyển</span>
-<span class="text-green-500">-50.000₫</span>
-</div>
-<div class="flex justify-between items-center text-[#92a4c9] text-sm">
-<span>Voucher giảm giá</span>
-<span class="text-green-500">-1.000.000₫</span>
-</div>
-<div class="h-[1px] bg-[#232f48] my-2"></div>
-<div class="flex justify-between items-center">
-<span class="text-white font-bold text-lg">Tổng thanh toán</span>
-<span class="text-primary font-bold text-2xl">92.280.000₫</span>
-</div>
-<p class="text-right text-[#92a4c9] text-xs italic">(Đã bao gồm VAT)</p>
-<button class="w-full mt-4 bg-primary hover:bg-blue-600 transition-all text-white font-bold py-3 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-<span class="material-symbols-outlined">refresh</span>
-                                Mua lại đơn hàng
-                            </button>
-</div>
-</div>
-</div>
-</div>
-</div>
-</main>
