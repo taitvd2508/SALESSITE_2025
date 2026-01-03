@@ -96,7 +96,8 @@ export const actions: Actions = {
 
     // 2) Upload file lên bucket (nếu có)
     if (files.length > 0) {
-      const folder = slugFolder(type); // laptop / ban-phim / ...
+      const typeFolder = slugFolder(type); // laptop / ban-phim / tai-nghe /...
+      const brandFolder = slugFolder(brand); // acer / asus /...
       const uploadedUrls: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -104,8 +105,8 @@ export const actions: Actions = {
         const ext = extFromFile(f);
         const index = String(i + 1).padStart(2, '0');
 
-        // bạn muốn /products/products/<type>/<slug>-01.jpg
-        const path = `products/${folder}/${finalSlug}-${index}.${ext}`;
+        // /products/<type>/<brand>/<slug>-01.jpg
+        const path = `products/${typeFolder}/${brandFolder}/${finalSlug}-${index}.${ext}`;
 
         const { error: upErr } = await locals.supabase.storage
           .from('products')

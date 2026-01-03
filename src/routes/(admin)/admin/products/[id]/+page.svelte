@@ -10,6 +10,7 @@
   const BUCKET = 'products';
 
   let product = data?.product;
+  let localPreviews: string[] = [];
 
   // form fields
   let name = product?.name ?? '';
@@ -37,7 +38,7 @@
     const s = (input ?? '')
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u0300-\u036f]/g, '') // \u0300 – \u036f: Unicode Combining Diacritical Marks: các ký tự dấu: sắc, huyền, hỏi, ngã, nặng...
       .replace(/[^a-z0-9\s-]/g, '')
       .trim()
       .replace(/\s+/g, '-')
@@ -46,6 +47,7 @@
   };
 
   const typeFolder = () => slugify(type || 'other', 40) || 'other';
+  const brandFolder = () => slugify(brand || 'other', 40) || 'other';
 
   const getExt = (f: File) => {
     const byName = f.name.split('.').pop()?.toLowerCase();
@@ -101,7 +103,7 @@
         const idx = existingCount + i + 1;
         const fileName = `${slug}-${pad2(idx)}.${ext}`;
 
-        const objectKey = `products/${typeFolder()}/${fileName}`;
+        const objectKey = `products/${typeFolder()}/${brandFolder()}/${fileName}`;
 
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
@@ -116,13 +118,25 @@
         const { data: pub } = supabase.storage
           .from(BUCKET)
           .getPublicUrl(objectKey);
-        if (pub?.publicUrl) added.push(pub.publicUrl);
+        if (pub?.publicUrl) {
+          added.push(`${pub.publicUrl}?v=${Date.now()}`);
+        }
       }
 
       if (added.length === 0) {
         uploadError = 'Không có ảnh hợp lệ để upload.';
       } else {
         images = [...images, ...added];
+        localPreviews.forEach((u) => URL.revokeObjectURL(u));
+        localPreviews = [];
+        files = null;
+
+        // reset luôn input để lần sau chọn lại cùng file vẫn trigger change
+        const el = document.getElementById(
+          'fileInputEdit'
+        ) as HTMLInputElement | null;
+        if (el) el.value = '';
+
         uploadOk = `Đã upload ${added.length} ảnh.`;
       }
 
@@ -176,9 +190,17 @@
       };
     });
 
-  function onActiveChange(e: Event) {
-    const el = e.currentTarget as HTMLSelectElement;
-    active = el.value === 'true';
+  function onFileChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    files = input.files;
+
+    // clear preview cũ để tránh leak
+    localPreviews.forEach((u) => URL.revokeObjectURL(u));
+    localPreviews = [];
+
+    if (files?.length) {
+      localPreviews = Array.from(files).map((f) => URL.createObjectURL(f));
+    }
   }
 </script>
 
@@ -376,7 +398,7 @@
           accept="image/*"
           multiple
           class="block w-full text-sm text-[#92a4c9] file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#232f48] file:text-white hover:file:bg-[#2c3a55]"
-          on:change={onActiveChange}
+          on:change={onFileChange}
         />
 
         <button
@@ -406,6 +428,44 @@
 
       <!-- list -->
       <div class="grid grid-cols-2 gap-3 mt-5">
+        <!-- Ảnh vừa chọn từ máy (chưa upload) -->
+        {#each localPreviews as p, i}
+          <div
+            class="relative rounded-xl overflow-hidden border border-[#232f48] bg-[#0b0f16] opacity-80"
+            title="Ảnh preview (chưa upload)"
+          >
+            <img
+              src={p}
+              alt="preview"
+              class="object-cover w-full aspect-square"
+            />
+
+            <!-- nút bỏ preview -->
+            <button
+              type="button"
+              class="absolute z-10 flex items-center justify-center text-white transition-colors rounded-lg top-2 right-2 size-8 bg-black/60 hover:bg-red-600"
+              on:click|stopPropagation={() => {
+                // xoá 1 preview
+                URL.revokeObjectURL(localPreviews[i]);
+                localPreviews = localPreviews.filter((_, k) => k !== i);
+
+                // nếu muốn xoá luôn file tương ứng thì phải rebuild FileList (khó),
+                // nên thường chỉ xoá preview thôi, file vẫn nằm trong input cho tới khi bạn chọn lại.
+              }}
+              aria-label="Bỏ ảnh preview"
+            >
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+
+            <div
+              class="absolute bottom-0 left-0 right-0 px-2 py-1 text-xs text-white bg-black/60"
+            >
+              Chưa upload
+            </div>
+          </div>
+        {/each}
+
+        <!-- Ảnh đã có URL (đã lưu DB / đã upload) -->
         {#each images as img, idx}
           <div
             class="relative rounded-xl overflow-hidden border border-[#232f48] bg-[#0b0f16]"
@@ -427,7 +487,7 @@
         {/each}
       </div>
 
-      {#if images.length === 0}
+      {#if images.length === 0 && localPreviews.length === 0}
         <div class="mt-4 text-[#92a4c9] text-sm">Chưa có ảnh nào.</div>
       {/if}
     </div>
