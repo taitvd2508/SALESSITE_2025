@@ -37,5 +37,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     throw redirect(303, '/');
   }
 
-  return { user, role };
+  let profile: any = null;
+  const { data: p } = await locals.supabase
+    .from('profiles')
+    .select('id, full_name, phone, address, email')
+    .eq('id', user.id)
+    .single();
+  profile = p ?? null;
+
+  return { user, role, profile };
 };
