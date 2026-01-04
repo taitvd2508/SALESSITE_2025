@@ -2,12 +2,12 @@
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
   import { cart, cartTotals } from '$lib/stores/cart';
-  import { supabase } from '$lib/supabase/client'; // bạn phải có file này
+  import { supabase } from '$lib/supabase/client'; //bạn phải có file này
 
   let q = '';
   $: pathname = $page.url.pathname;
 
-  // auth data từ (site)/+layout.server.ts
+  //auth data từ (site)/+layout.server.ts
   $: user = $page.data?.user ?? null;
   $: profile = $page.data?.profile ?? null;
   $: role = $page.data?.role ?? null;
@@ -20,7 +20,7 @@
     return parts[parts.length - 1];
   };
 
-  // Menu link sửa theo /products params: type, brand
+  //Menu link sửa theo /products params: type, brand
   const menu = [
     {
       key: 'laptop',
@@ -184,7 +184,7 @@
     },
   ];
 
-  // dropdown state
+  //dropdown state
   let openKey: string | null = null;
   let closeTimer: any = null;
 
@@ -231,13 +231,13 @@
     if (!mobileCatalogOpen) mobileOpenKey = null;
   }
 
-  // function onSearchSubmit(e: Event) {
-  //   e.preventDefault();
-  //   const query = q.trim();
-  //   window.location.href = query
-  //     ? `/products?q=${encodeURIComponent(query)}`
-  //     : '/products';
-  // }
+  //function onSearchSubmit(e: Event) {
+  //  e.preventDefault();
+  //  const query = q.trim();
+  //  window.location.href = query
+  //    ? `/products?q=${encodeURIComponent(query)}`
+  //    : '/products';
+  //}
 
   function onSearchSubmit(e: Event) {
     e.preventDefault();
@@ -248,10 +248,10 @@
   async function logout() {
     await supabase.auth.signOut();
 
-    // ép SvelteKit reload lại +layout.server.ts => user/profile = null
+    //ép SvelteKit reload lại +layout.server.ts => user/profile = null
     await invalidateAll();
 
-    // chuyển về trang chủ
+    //chuyển về trang chủ
     await goto('/');
   }
 
@@ -602,7 +602,7 @@
           {/each}
 
           <div class="relative">
-            <!-- ✅ Guest(chưa login): thêm "Kiểm tra đơn hàng" -->
+            <!--  Guest(chưa login): thêm "Kiểm tra đơn hàng" -->
             {#if !user}
               <a
                 href="/account/orders"
@@ -614,7 +614,7 @@
                 Kiểm tra đơn hàng
               </a>
             {/if}
-            <!-- ✅ Logged in: dropdown "Tài Khoản" -->
+            <!--  Logged in: dropdown "Tài Khoản" -->
             {#if user}
               <div
                 class="relative"

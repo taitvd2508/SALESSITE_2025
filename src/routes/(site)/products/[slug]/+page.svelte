@@ -13,12 +13,12 @@
 
   let forYou: any[] = [];
 
-  // gallery state
+  //gallery state
   let selectedIndex = 0;
 
   let images: string[] = [];
 
-  // derived
+  //derived
   $: product = data?.product;
   $: title = product?.name ?? '';
   $: desc = product?.description ?? '';
@@ -38,7 +38,7 @@
     return p?.images?.[0] ?? '/images/placeholder-product.png';
   }
 
-  // choose what to show in "Sản phẩm thường mua kèm"
+  //choose what to show in "Sản phẩm thường mua kèm"
   /*Ưu tiên hiển thị “Sản phẩm thường mua kèm”
   nếu có dữ liệu mua chung,
   ngược lại thì fallback sang “Đang thịnh hành”.*/
@@ -55,7 +55,7 @@
     const productId = data?.product?.id;
     if (!productId) return;
 
-    // (A) track view_product (chặn spam)
+    //(A) track view_product (chặn spam)
     const key = `viewed_${productId}`;
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, '1');
@@ -70,7 +70,7 @@
       });
     }
 
-    // (B) for you
+    //(B) for you
     const res = await fetch(`/api/recommendations?current=${productId}`);
     const js = await res.json();
     if (js?.ok) forYou = js.forYou ?? [];
@@ -87,7 +87,7 @@
     };
   }
 
-  // add đúng sản phẩm đang xem
+  //add đúng sản phẩm đang xem
   async function addToCart() {
     const p = data?.product;
     if (!p) return;
@@ -106,7 +106,7 @@
     showToast('Đã thêm vào giỏ');
   }
 
-  // ✅ add đúng sản phẩm card (forYou/trending/similar)
+  // add đúng sản phẩm card (forYou/trending/similar)
   async function addCardToCart(p: any) {
     if (!p?.id) return;
 

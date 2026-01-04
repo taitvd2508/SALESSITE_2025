@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 
-// lấy dữ liệu sản phẩm để đổ vào form --- (load() lấy id từ URL → query Supabase lấy product.)
+//lấy dữ liệu sản phẩm để đổ vào form --- (load() lấy id từ URL → query Supabase lấy product.)
 export const load: PageServerLoad = async ({ params, locals }) => {
   const id = Number(params.id);
   if (!Number.isFinite(id)) throw redirect(303, '/admin/products');
@@ -19,9 +19,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   return { mode: 'edit', product };
 };
 
-// xử lý khi bấm “Lưu thay đổi” (Cập nhật)
+//xử lý khi bấm “Lưu thay đổi” (Cập nhật)
 export const actions: Actions = {
-  // Khi form POST tới ?/update, server chạy action update. - Server đọc FormData từ request, parse từng field.
+  //Khi form POST tới ?/update, server chạy action update. - Server đọc FormData từ request, parse từng field.
   update: async ({ request, locals, params }) => {
     const id = Number(params.id);
     if (!Number.isFinite(id)) return fail(400, { message: 'Invalid id' });
@@ -44,12 +44,12 @@ export const actions: Actions = {
 
     const description = String(fd.get('description') ?? '').trim();
 
-    // ✅ nhận active từ form (hidden input)
+    // nhận active từ form (hidden input)
     const activeStr = String(fd.get('active') ?? '').trim();
     const active =
       activeStr === 'true' ? true : activeStr === 'false' ? false : null;
 
-    // ✅ parse images text[]
+    // parse images text[]
     const imagesRaw = String(fd.get('images') ?? '[]');
     let images: string[] = [];
     try {
@@ -59,7 +59,7 @@ export const actions: Actions = {
       images = [];
     }
 
-    // validate
+    //validate
     if (!name || !slug || !brand || !type) {
       return fail(400, {
         message: 'Vui lòng nhập đủ: tên, slug, brand, type.',
@@ -89,7 +89,7 @@ export const actions: Actions = {
 
     if (active !== null) payload.active = active;
 
-    // Update Supabase và trả kết quả cho client
+    //Update Supabase và trả kết quả cho client
     const { error } = await locals.supabase
       .from('products')
       .update(payload)
@@ -103,7 +103,7 @@ export const actions: Actions = {
     return { ok: true, message: 'Cập nhật sản phẩm thành công.' };
   },
 
-  // /toggleActive POST bên page.svelte
+  //toggleActive POST bên page.svelte
   toggleActive: async ({ locals, params }) => {
     const id = Number(params.id);
     if (!Number.isFinite(id)) return fail(400, { message: 'Invalid id' });
@@ -122,7 +122,7 @@ export const actions: Actions = {
       .update({ active: !row.active })
       .eq('id', id);
 
-    // if (error) return fail(500, { message: error.message });
+    //if (error) return fail(500, { message: error.message });
     if (error) {
       let msg = 'Cập nhật thất bại';
 

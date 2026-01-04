@@ -53,7 +53,7 @@ export const actions: Actions = {
       });
     }
 
-    // ✅ Tránh .or(...) bị “special char” khó chịu: thử email trước, không có thì thử phone
+    // Tránh .or(...) bị “special char” khó chịu: thử email trước, không có thì thử phone
     const baseSelect = `
       id, created_at, total_price, full_name, phone, address, email,
       status:order_status(id, code, name),
@@ -64,7 +64,7 @@ export const actions: Actions = {
       )
     `;
 
-    // 1) match email
+    //1) match email
     let { data: orderByEmail, error: errEmail } = await admin
       .from('orders')
       .select(baseSelect)
@@ -72,7 +72,7 @@ export const actions: Actions = {
       .eq('email', contact)
       .maybeSingle();
 
-    // 2) nếu không có -> match phone
+    //2) nếu không có -> match phone
     if (!orderByEmail) {
       const { data: orderByPhone, error: errPhone } = await admin
         .from('orders')
@@ -86,7 +86,7 @@ export const actions: Actions = {
     }
 
     if (errEmail) {
-      // log để bạn debug trên terminal
+      //log để bạn debug trên terminal
       console.error('GUEST LOOKUP ERROR:', errEmail);
       return fail(500, {
         lookupError: 'Có lỗi khi tra cứu. Vui lòng thử lại sau.',

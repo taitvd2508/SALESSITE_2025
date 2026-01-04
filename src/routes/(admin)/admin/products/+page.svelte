@@ -298,7 +298,7 @@
                         >
                       </a>
 
-                      <!-- ✅ Toggle Active/Disable -->
+                      <!--  Toggle Active/Disable -->
                       <form
                         method="POST"
                         action="?/toggleActive"

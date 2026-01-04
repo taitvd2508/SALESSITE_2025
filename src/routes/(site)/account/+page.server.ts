@@ -1,14 +1,14 @@
-// src/routes/(site)/account/+page.server.ts
+//src/routes/(site)/account/+page.server.ts
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-  // const session = await locals.getSession?.();
-  // if (!session) {
-  //   throw redirect(303, `/auth/login?next=${encodeURIComponent(url.pathname)}`);
-  // }
+  //const session = await locals.getSession?.();
+  //if (!session) {
+  //  throw redirect(303, `/auth/login?next=${encodeURIComponent(url.pathname)}`);
+  //}
 
-  // const user = session.user;
+  //const user = session.user;
   const {
     data: { user },
     error,
@@ -44,12 +44,12 @@ export const actions: Actions = {
     const gender = String(form.get('gender') ?? 'unknown').trim();
     const birthday = String(form.get('birthday') ?? '').trim() || null;
 
-    // validate gender
+    //validate gender
     if (!['male', 'female', 'unknown'].includes(gender)) {
       return fail(400, { message: 'Giới tính không hợp lệ' });
     }
 
-    // validate birthday format (YYYY-MM-DD) and ensure it's not in the future
+    //validate birthday format (YYYY-MM-DD) and ensure it's not in the future
     if (birthday) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
         return fail(400, { message: 'Ngày sinh không hợp lệ' });
@@ -59,7 +59,7 @@ export const actions: Actions = {
       }
     }
 
-    // validate phone
+    //validate phone
     if (phone && !/^\d{9,11}$/.test(phone)) {
       return fail(400, { message: 'Số điện thoại không hợp lệ' });
     }
@@ -71,7 +71,7 @@ export const actions: Actions = {
         phone,
         address,
         gender,
-        birthday // Saving birthday from datepicker
+        birthday //Saving birthday from datepicker
       })
       .eq('id', user.id);
 

@@ -11,7 +11,7 @@ const config = {
     },
   },
   onwarn: (warning, handler) => {
-    // Disable all a11y (accessibility) warnings
+    //Disable all a11y (accessibility) warnings
     if (warning.code.startsWith("a11y-")) {
       return;
     }

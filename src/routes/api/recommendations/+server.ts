@@ -10,7 +10,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
   const sid = cookies.get('tt_sid');
   if (!sid) return json({ ok: true, forYou: [] });
 
-  // ✅ BIGINT => parse number
+  // BIGINT => parse number
   const currentParam = url.searchParams.get('current');
   const currentProductId = currentParam ? Number(currentParam) : null;
   const currentIdValid = currentProductId !== null && !Number.isNaN(currentProductId);
@@ -50,16 +50,16 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     new Set([...(recentIds ?? []), ...(currentIdValid ? [currentProductId!] : [])])
   );
 
-  // ✅ BIGINT => NOT IN (1,2,3) KHÔNG QUOTE
+  // BIGINT => NOT IN (1,2,3) KHÔNG QUOTE
   const excludeSqlList = excludeIds.length > 0 ? `(${excludeIds.join(',')})` : null;
 
   let forYou: any[] = [];
 
-  // ưu tiên cùng type
+  //ưu tiên cùng type
   if (types.length > 0) {
     let q = supabase
       .from('products')
-      .select('id,slug,name,price,old_price,images,brand,type') // ✅ thêm slug để UI href
+      .select('id,slug,name,price,old_price,images,brand,type') // thêm slug để UI href
       .in('type', types)
       .eq('active', true)
       .limit(8);
@@ -71,11 +71,11 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     forYou = data ?? [];
   }
 
-  // thiếu thì bổ sung cùng brand
+  //thiếu thì bổ sung cùng brand
   if (forYou.length < 8 && brands.length > 0) {
     let q = supabase
       .from('products')
-      .select('id,slug,name,price,old_price,images,brand,type') // ✅ thêm slug để UI href
+      .select('id,slug,name,price,old_price,images,brand,type') // thêm slug để UI href
       .in('brand', brands)
       .eq('active', true)
       .limit(8);

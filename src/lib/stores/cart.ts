@@ -1,9 +1,9 @@
-// cart store dùng localStorage
+//cart store dùng localStorage
 import { browser } from '$app/environment';
 import { writable, get } from 'svelte/store';
 
 export type CartItem = {
-  product_id: number; // BIGINT id của products
+  product_id: number; //BIGINT id của products
   slug: string;
   name: string;
   price: number;
@@ -40,7 +40,7 @@ function createCart() {
   const { subscribe, set, update } = writable<CartState>(loadInitial());
 
   if (browser) {
-    // sync giữa tab
+    //sync giữa tab
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY) set(loadInitial());
     });
