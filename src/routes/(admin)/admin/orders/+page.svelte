@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
 
   export let data: any;
+  let t: any;
 
   $: exportHref = `/admin/orders/export${$page.url.search}`;
 
@@ -25,13 +26,31 @@
     }
   };
 
-  function setParam(key: string, val: string) {
-    const u = new URL(window.location.href);
-    if (!val) u.searchParams.delete(key);
-    else u.searchParams.set(key, val);
-    u.searchParams.delete('page'); // đổi filter thì reset page
-    goto(u.pathname + '?' + u.searchParams.toString(), { replaceState: true });
+  function buildUrl(
+    patch: Record<string, string | null | undefined>,
+    nextPage?: number
+  ) {
+    const u = new URL($page.url);
+
+    for (const [k, v] of Object.entries(patch)) {
+      if (!v) u.searchParams.delete(k);
+      else u.searchParams.set(k, v);
+    }
+
+    if (typeof nextPage === 'number')
+      u.searchParams.set('page', String(nextPage));
+    else u.searchParams.delete('page'); // đổi filter => về page 1
+
+    return u.pathname + '?' + u.searchParams.toString();
   }
+
+  $: totalPages = Math.max(
+    1,
+    Math.ceil((data.total ?? 0) / (data.pageSize ?? 12))
+  );
+  $: fromItem =
+    (data.total ?? 0) === 0 ? 0 : (data.page - 1) * data.pageSize + 1;
+  $: toItem = Math.min(data.total ?? 0, data.page * data.pageSize);
 
   function badgeClass(code: string) {
     switch (code) {
@@ -50,27 +69,34 @@
     }
   }
 
-  // SEARCH
+  // FILTER HANDLERS
   function onSearchChange(e: Event) {
-    const value = (e.currentTarget as HTMLInputElement).value.trim();
-    setParam('q', value);
+    const v = (e.currentTarget as HTMLInputElement).value.trim();
+    clearTimeout(t);
+    t = setTimeout(() => {
+      goto(buildUrl({ q: v || null }));
+    }, 300);
   }
 
-  // DATE FILTERS
   function onFromDateChange(e: Event) {
-    const value = (e.currentTarget as HTMLInputElement).value;
-    setParam('from', value);
+    const v = (e.currentTarget as HTMLInputElement).value;
+    goto(buildUrl({ from: v || null }), { replaceState: true });
   }
 
   function onToDateChange(e: Event) {
-    const value = (e.currentTarget as HTMLInputElement).value;
-    setParam('to', value);
+    const v = (e.currentTarget as HTMLInputElement).value;
+    goto(buildUrl({ to: v || null }), { replaceState: true });
   }
 
-  // METHOD FILTER
   function onMethodChange(e: Event) {
-    const select = (e.currentTarget as HTMLSelectElement).value;
-    setParam('method', select);
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    goto(buildUrl({ method: v || null }), { replaceState: true });
+  }
+
+  // PAGINATION
+  function goPage(p: number) {
+    if (p < 1 || p > data.totalPages) return;
+    goto(buildUrl({}, p));
   }
 </script>
 
@@ -90,7 +116,8 @@
               ? 'bg-primary text-white'
               : 'bg-surface-dark border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600'
           }`}
-          on:click={() => setParam('status', '')}
+          on:click={() =>
+            goto(buildUrl({ status: null }), { replaceState: true })}
         >
           Tất cả
         </button>
@@ -102,7 +129,8 @@
                 ? 'bg-primary text-white'
                 : 'bg-surface-dark border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600'
             }`}
-            on:click={() => setParam('status', s.code)}
+            on:click={() =>
+              goto(buildUrl({ status: s.code }), { replaceState: true })}
           >
             {s.name}
           </button>
@@ -127,7 +155,7 @@
               placeholder="Nhập mã đơn, tên, email, SĐT..."
               type="text"
               value={data.filters.q ?? ''}
-              on:change={onSearchChange}
+              on:input={onSearchChange}
             />
           </div>
         </div>
@@ -180,46 +208,47 @@
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Table Card -->
     <div
       class="overflow-hidden border border-gray-800 shadow-xl bg-surface-dark rounded-xl shadow-black/20"
     >
+      <div class="flex items-center justify-between px-6 py-4">
+        <div class="text-sm text-[#92a4c9]">
+          Hiển thị <span class="font-bold text-white">{fromItem}-{toItem}</span>
+          trong
+          <span class="font-bold text-white">{data.total ?? 0}</span> đơn hàng
+        </div>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-gray-700 bg-gray-800/50">
-              <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider w-[100px]"
-              >
+          <thead class="bg-[#0b0f16] text-[#92a4c9]">
+            <tr class="text-left border-b border-gray-700">
+              <th class="py-4 px-6 text-xs uppercase tracking-wider w-[100px]">
                 Mã đơn
               </th>
               <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[260px]"
+                class="py-4 px-6 text-xs uppercase tracking-wider min-w-[260px]"
               >
                 Khách hàng
               </th>
-              <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider w-[180px]"
-              >
+              <th class="py-4 px-6 text-xs uppercase tracking-wider w-[180px]">
                 Ngày tạo
               </th>
-              <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider w-[170px]"
-              >
+              <th class="py-4 px-6 text-xs uppercase tracking-wider w-[170px]">
                 Thanh toán
               </th>
               <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right w-[160px]"
+                class="py-4 px-6 text-xs uppercase tracking-wider text-right w-[160px]"
               >
                 Tổng tiền
               </th>
               <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center w-[170px]"
+                class="py-4 px-6 text-xs uppercase tracking-wider text-center w-[170px]"
               >
                 Trạng thái
               </th>
               <th
-                class="py-4 px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right w-[120px]"
+                class="py-4 px-6 text-xs uppercase tracking-wider text-center w-[120px]"
               >
                 Hành động
               </th>
