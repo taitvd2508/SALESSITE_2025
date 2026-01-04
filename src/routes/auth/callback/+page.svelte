@@ -22,7 +22,7 @@
       const next = nextRaw.startsWith('/') ? nextRaw : '/';
       console.log('[callback] next:', next);
 
-      // (A) PKCE code flow
+      //(A) PKCE code flow
       const code = url.searchParams.get('code');
       if (code) {
         console.log('[callback] has code:', code);
@@ -36,7 +36,7 @@
         return;
       }
 
-      // (B) Implicit hash flow
+      //(B) Implicit hash flow
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       const access_token = hash.get('access_token');
       const refresh_token = hash.get('refresh_token');
@@ -63,15 +63,15 @@
         return;
       }
 
-      // Không có code và cũng không có đủ hash token
+      //Không có code và cũng không có đủ hash token
       msg =
         'Thiếu token trong URL. Có thể link không hợp lệ hoặc đã được dùng.';
       console.error('[callback] missing tokens; cannot set session');
-      // KHÔNG goto error vội để bạn nhìn log
+      //KHÔNG goto error vội để bạn nhìn log
     } catch (e: any) {
       console.error('[callback] ERROR:', e);
       msg = e?.message ?? 'Xác thực thất bại';
-      // KHÔNG goto error vội để bạn nhìn log
+      //KHÔNG goto error vội để bạn nhìn log
     }
   });
 </script>

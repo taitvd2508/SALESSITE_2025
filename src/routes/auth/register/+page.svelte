@@ -11,7 +11,7 @@
 
   export let form: ActionData;
 
-  // Supabase client (client-side) - dùng để signUp/resend để có PKCE code_verifier
+  //Supabase client (client-side) - dùng để signUp/resend để có PKCE code_verifier
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
   let loading = false;
@@ -20,29 +20,29 @@
   let validating = false;
   let signingUp = false;
 
-  // nút dùng biến này
+  //nút dùng biến này
   $: loading = validating || signingUp;
 
-  // Fields (giữ lại value khi server trả lỗi validation)
+  //Fields (giữ lại value khi server trả lỗi validation)
   $: email = (form?.values?.email ?? '').toString();
   $: full_name = (form?.values?.full_name ?? '').toString();
   $: phone = (form?.values?.phone ?? '').toString();
 
-  // password/confirm/agree là state ở client (KHÔNG trả về từ server)
+  //password/confirm/agree là state ở client (KHÔNG trả về từ server)
   let password = '';
   let confirm = '';
   let agree = false;
 
-  // Client-side error (từ supabase.auth.signUp/resend)
+  //Client-side error (từ supabase.auth.signUp/resend)
   let clientError = '';
 
-  // UI chờ verify email
+  //UI chờ verify email
   let verificationPending = false;
   let timer = 60;
   let timerInterval: any;
   let pollingInterval: any;
 
-  // Chặn gọi signUp nhiều lần khi SvelteKit update form
+  //Chặn gọi signUp nhiều lần khi SvelteKit update form
   let didSignup = false;
 
   function startTimer() {
@@ -54,7 +54,7 @@
     }, 1000);
   }
 
-  // Poll session status (server đọc httpOnly cookie). Khi cookie có → header/site layout update → về trang chủ
+  //Poll session status (server đọc httpOnly cookie). Khi cookie có → header/site layout update → về trang chủ
   function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(async () => {
@@ -101,7 +101,7 @@
     }
   }
 
-  // ✅ Khi server validate xong và trả success=true → gọi signUp ở client (để có PKCE verifier)
+  //Khi server validate xong và trả success=true → gọi signUp ở client (để có PKCE verifier)
   $: if (form?.success && !didSignup) {
     didSignup = true;
     doClientSignUp();
@@ -240,8 +240,8 @@
               verificationPending = false;
 
               return async ({ update }) => {
-                await update({ reset: false }); // validate server
-                validating = false; // chỉ tắt validating, KHÔNG đụng signingUp
+                await update({ reset: false }); //validate server
+                validating = false; //chỉ tắt validating, KHÔNG đụng signingUp
               };
             }}
           >

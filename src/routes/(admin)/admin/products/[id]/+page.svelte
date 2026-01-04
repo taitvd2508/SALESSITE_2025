@@ -180,9 +180,9 @@
   const enhanceToggle = (node: HTMLFormElement) =>
     enhance(node, () => {
       //return async ({ result, update }) => {
-      //  await update(); //cập nhật biến form (để hiện message ok/error)
-      //  await applyAction(result);
-      //  await invalidateAll();
+      // await update(); //cập nhật biến form (để hiện message ok/error)
+      // await applyAction(result);
+      // await invalidateAll();
       //};
       return async ({ result, update }) => {
         await applyAction(result);

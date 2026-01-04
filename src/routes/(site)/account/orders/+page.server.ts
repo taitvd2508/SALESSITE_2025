@@ -53,7 +53,7 @@ export const actions: Actions = {
       });
     }
 
-    // Tránh .or(...) bị “special char” khó chịu: thử email trước, không có thì thử phone
+    //Tránh .or(...) bị “special char” khó chịu: thử email trước, không có thì thử phone
     const baseSelect = `
       id, created_at, total_price, full_name, phone, address, email,
       status:order_status(id, code, name),

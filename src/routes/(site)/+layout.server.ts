@@ -16,7 +16,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .single();
     profile = p ?? null;
 
-    // lấy role
+    //lấy role
     const { data: r } = await locals.supabase
       .from('user_roles')
       .select('role')

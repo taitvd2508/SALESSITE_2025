@@ -66,7 +66,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       .in('id', trendingIds)
       .eq('active', true);
 
-    // Giữ đúng thứ tự theo score_30d (theo trendingIds)
+    //Giữ đúng thứ tự theo score_30d (theo trendingIds)
     const map = new Map((data ?? []).map((p) => [p.id, p]));
     trendingProducts = trendingIds.map((id) => map.get(id)).filter(Boolean).slice(0, 8); //lấy 8
   }

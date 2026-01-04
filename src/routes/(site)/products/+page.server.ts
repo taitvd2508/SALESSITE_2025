@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 	const pageSize = 12;
 
-	// parse min/max đúng cách
+	//parse min/max đúng cách
 	const minStr = url.searchParams.get('min');
 	const maxStr = url.searchParams.get('max');
 	const min = minStr !== null && minStr !== '' ? Number(minStr) : null;

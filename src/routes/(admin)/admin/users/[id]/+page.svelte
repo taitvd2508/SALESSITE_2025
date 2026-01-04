@@ -30,18 +30,18 @@
     toastTimer = setTimeout(() => (toast = ''), 1600);
   }
 
-  // form fields (bind from server data)
+  //form fields (bind from server data)
   let p = data?.profile;
 
   let full_name = p?.full_name ?? '';
   let email = p?.email ?? '';
   let phone = p?.phone ?? '';
   let address = p?.address ?? '';
-  let birthday = p?.birthday ?? ''; // yyyy-mm-dd
-  let gender = p?.gender ?? ''; // enum value
+  let birthday = p?.birthday ?? ''; //yyyy-mm-dd
+  let gender = p?.gender ?? ''; //enum value
   let role = data?.role ?? 'customer';
 
-  // Re-sync when navigating between users without full reload
+  //Re-sync when navigating between users without full reload
   $: if (data?.profile) {
     p = data.profile;
     full_name = p?.full_name ?? '';
@@ -56,11 +56,11 @@
   const enhanceSave = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ result, update }) => {
-        await update(); // cập nhật form state (nếu bạn return message)
+        await update(); //cập nhật form state (nếu bạn return message)
         await applyAction(result);
-        await invalidateAll(); // reload load()
+        await invalidateAll(); //reload load()
 
-        // show toast if action success
+        //show toast if action success
         const r: any = result;
         if (r?.type === 'success') {
           showToast(r?.data?.message ?? 'Đã lưu thay đổi.');

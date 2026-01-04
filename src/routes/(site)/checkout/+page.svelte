@@ -13,7 +13,7 @@
     };
   };
 
-  // default: nếu login -> có data.prefill, guest -> rỗng
+  //default: nếu login -> có data.prefill, guest -> rỗng
   let full_name = data.prefill.full_name;
   let phone = data.prefill.phone;
   let email = data.prefill.email;

@@ -48,10 +48,10 @@ export const actions: Actions = {
     if (!password || password.length < 6)
       return fail(400, { message: 'Mật khẩu tối thiểu 6 ký tự' });
 
-    // service role client (server only)
+    //service role client (server only)
     const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // create auth user (no email dependency)
+    //create auth user (no email dependency)
     const { data: created, error: cErr } = await admin.auth.admin.createUser({
       email,
       password,
@@ -68,7 +68,7 @@ export const actions: Actions = {
 
     const uid = created.user.id;
 
-    // Update profiles (trigger handle_new_user already inserted row)
+    //Update profiles (trigger handle_new_user already inserted row)
     const { error: pErr } = await admin
       .from('profiles')
       .update({
@@ -83,14 +83,14 @@ export const actions: Actions = {
 
     if (pErr) return fail(500, { message: pErr.message });
 
-    // Set role
+    //Set role
     const { error: rErr } = await admin
       .from('user_roles')
       .upsert({ user_id: uid, role });
 
     if (rErr) return fail(500, { message: rErr.message });
 
-    // Done
+    //Done
     throw redirect(303, `/admin/users/${uid}`);
   },
 };

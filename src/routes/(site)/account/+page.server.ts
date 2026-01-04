@@ -5,7 +5,7 @@ import { redirect, fail } from '@sveltejs/kit';
 export const load: PageServerLoad = async ({ locals, url }) => {
   //const session = await locals.getSession?.();
   //if (!session) {
-  //  throw redirect(303, `/auth/login?next=${encodeURIComponent(url.pathname)}`);
+  // throw redirect(303, `/auth/login?next=${encodeURIComponent(url.pathname)}`);
   //}
 
   //const user = session.user;

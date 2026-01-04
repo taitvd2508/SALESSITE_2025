@@ -106,7 +106,7 @@
     showToast('Đã thêm vào giỏ');
   }
 
-  // add đúng sản phẩm card (forYou/trending/similar)
+  //add đúng sản phẩm card (forYou/trending/similar)
   async function addCardToCart(p: any) {
     if (!p?.id) return;
 

@@ -44,12 +44,12 @@ export const actions: Actions = {
 
     const description = String(fd.get('description') ?? '').trim();
 
-    // nhận active từ form (hidden input)
+    //nhận active từ form (hidden input)
     const activeStr = String(fd.get('active') ?? '').trim();
     const active =
       activeStr === 'true' ? true : activeStr === 'false' ? false : null;
 
-    // parse images text[]
+    //parse images text[]
     const imagesRaw = String(fd.get('images') ?? '[]');
     let images: string[] = [];
     try {

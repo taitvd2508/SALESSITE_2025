@@ -67,7 +67,7 @@ export const actions: Actions = {
       return fail(400, { message: 'Giá bán không hợp lệ.' });
     }
 
-    // slug bắt buộc not null -> nếu trống, dùng name làm seed để trigger tự slugify
+    //slug bắt buộc not null -> nếu trống, dùng name làm seed để trigger tự slugify
     const slugSeed = slugInput || name;
 
     //1) Insert trước để lấy slug thật (do trigger set_product_slug quyết định)

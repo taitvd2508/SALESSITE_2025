@@ -84,8 +84,8 @@ export const actions: Actions = {
     const phone = String(fd.get('phone') ?? '').trim();
     const address = String(fd.get('address') ?? '').trim();
     const email = String(fd.get('email') ?? '').trim();
-    const birthday = String(fd.get('birthday') ?? '').trim(); // yyyy-mm-dd
-    const gender = String(fd.get('gender') ?? '').trim(); // enum
+    const birthday = String(fd.get('birthday') ?? '').trim(); //yyyy-mm-dd
+    const gender = String(fd.get('gender') ?? '').trim(); //enum
     const role = String(fd.get('role') ?? 'customer').trim() as Role;
 
     const { error } = await locals.supabase
@@ -102,7 +102,7 @@ export const actions: Actions = {
 
     if (error) return fail(500, { message: error.message });
 
-    // update role
+    //update role
     const { error: roleErr } = await locals.supabase
       .from('user_roles')
       .upsert({ user_id: id, role });

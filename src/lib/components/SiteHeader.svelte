@@ -232,11 +232,11 @@
   }
 
   //function onSearchSubmit(e: Event) {
-  //  e.preventDefault();
-  //  const query = q.trim();
-  //  window.location.href = query
-  //    ? `/products?q=${encodeURIComponent(query)}`
-  //    : '/products';
+  // e.preventDefault();
+  // const query = q.trim();
+  // window.location.href = query
+  //   ? `/products?q=${encodeURIComponent(query)}`
+  //   : '/products';
   //}
 
   function onSearchSubmit(e: Event) {

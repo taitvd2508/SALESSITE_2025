@@ -73,7 +73,7 @@
   let max = data.filters.max || '1000000000';
   let sort = data.filters.sort || 'newest';
 
-  // Sync lại state khi URL/filter đổi -> server load trả về data.filters mới
+  //Sync lại state khi URL/filter đổi -> server load trả về data.filters mới
   //(nhưng không overwrite khi user đang gõ nếu qInput đã giống qUrl)
   $: {
     const qUrl = data.filters.q ?? '';
@@ -113,7 +113,7 @@
   ) {
     const params = new URLSearchParams();
 
-    // q lấy từ overrides hoặc từ qInput (input state)
+    //q lấy từ overrides hoặc từ qInput (input state)
     const _q = overrides.q ?? qInput;
     const _type = overrides.type ?? selectedType;
     const _brand = overrides.brand ?? selectedBrand;

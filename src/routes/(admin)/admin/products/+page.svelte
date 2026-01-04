@@ -39,7 +39,7 @@
 
     if (typeof nextPage === 'number')
       u.searchParams.set('page', String(nextPage));
-    else u.searchParams.delete('page'); // đổi filter => reset page về 1
+    else u.searchParams.delete('page'); //đổi filter => reset page về 1
 
     return u.pathname + '?' + u.searchParams.toString();
   }
@@ -52,7 +52,7 @@
     (data.total ?? 0) === 0 ? 0 : (data.page - 1) * data.pageSize + 1;
   $: toItem = Math.min(data.total ?? 0, data.page * data.pageSize);
 
-  // ====== filter change handlers ======
+  //====== filter change handlers ======
   function onQChange(e: Event) {
     const v = (e.currentTarget as HTMLInputElement).value.trim();
     clearTimeout(t);
