@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { enhance, applyAction } from '$app/forms';
-  import { invalidateAll } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { enhance } from '$app/forms';
 
   export let data: any;
+  let t: any;
 
   const cover = (imgs: string[] | null | undefined) =>
     imgs?.[0] ?? '/images/placeholder-product.png';
@@ -24,15 +26,22 @@
     }
   };
 
-  // build query string giữ filter khi chuyển trang
-  function buildQs(nextPage: number) {
-    const p = new URLSearchParams();
-    if (data.filters?.q) p.set('q', data.filters.q);
-    if (data.filters?.type) p.set('type', data.filters.type);
-    if (data.filters?.brand) p.set('brand', data.filters.brand);
-    if (data.filters?.status) p.set('status', data.filters.status);
-    p.set('page', String(nextPage));
-    return `?${p.toString()}`;
+  function buildUrl(
+    patch: Record<string, string | null | undefined>,
+    nextPage?: number
+  ) {
+    const u = new URL($page.url);
+
+    for (const [k, v] of Object.entries(patch)) {
+      if (!v) u.searchParams.delete(k);
+      else u.searchParams.set(k, v);
+    }
+
+    if (typeof nextPage === 'number')
+      u.searchParams.set('page', String(nextPage));
+    else u.searchParams.delete('page'); // đổi filter => reset page về 1
+
+    return u.pathname + '?' + u.searchParams.toString();
   }
 
   $: totalPages = Math.max(
@@ -43,11 +52,40 @@
     (data.total ?? 0) === 0 ? 0 : (data.page - 1) * data.pageSize + 1;
   $: toItem = Math.min(data.total ?? 0, data.page * data.pageSize);
 
+  // ====== filter change handlers ======
+  function onQChange(e: Event) {
+    const v = (e.currentTarget as HTMLInputElement).value.trim();
+    clearTimeout(t);
+    t = setTimeout(() => {
+      goto(buildUrl({ q: v || null }));
+    }, 300);
+  }
+
+  function onTypeChange(e: Event) {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    goto(buildUrl({ type: v || null }));
+  }
+
+  function onBrandChange(e: Event) {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    goto(buildUrl({ brand: v || null }));
+  }
+
+  function onStatusChange(e: Event) {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    goto(buildUrl({ status: v || null }));
+  }
+
+  function goPage(p: number) {
+    if (p < 1 || p > totalPages) return;
+    goto(buildUrl({}, p));
+  }
+
   const enhanceToggle = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ update }) => {
-        await update(); // cập nhật dữ liệu sau action
-        await invalidateAll(); // reload load() hiện tại
+        await update();
+        await invalidateAll();
       };
     });
 </script>
@@ -95,6 +133,7 @@
             type="text"
             name="q"
             value={data.filters?.q ?? ''}
+            on:input={onQChange}
           />
         </div>
       </div>
@@ -104,6 +143,7 @@
           class="block w-full pl-3 pr-10 py-2.5 text-base border border-[#232f48] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm rounded-lg bg-[#111722] text-white"
           name="type"
           value={data.filters?.type ?? ''}
+          on:change={onTypeChange}
         >
           <option value="">Tất cả danh mục</option>
           {#each data.facets?.types ?? [] as t}
@@ -117,6 +157,7 @@
           class="block w-full pl-3 pr-10 py-2.5 text-base border border-[#232f48] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm rounded-lg bg-[#111722] text-white"
           name="brand"
           value={data.filters?.brand ?? ''}
+          on:change={onBrandChange}
         >
           <option value="">Tất cả thương hiệu</option>
           {#each data.facets?.brands ?? [] as b}
@@ -130,21 +171,12 @@
           class="block w-full pl-3 pr-10 py-2.5 text-base border border-[#232f48] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm rounded-lg bg-[#111722] text-white"
           name="status"
           value={data.filters?.status ?? ''}
+          on:change={onStatusChange}
         >
           <option value="">Trạng thái</option>
           <option value="active">Active</option>
           <option value="inactive">Disable</option>
         </select>
-      </div>
-
-      <div class="flex justify-end lg:col-span-10">
-        <button
-          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#232f48] bg-[#111722] text-white font-bold hover:bg-[#232f48]/60 transition-colors"
-          type="submit"
-        >
-          <span class="material-symbols-outlined text-[20px]">filter_alt</span>
-          Lọc
-        </button>
       </div>
     </form>
 
@@ -163,15 +195,29 @@
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead class="bg-[#0b0f16] text-[#92a4c9]">
-            <tr class="text-left">
-              <th class="px-6 py-4">Sản phẩm</th>
-              <th class="px-6 py-4">Slug</th>
-              <th class="px-6 py-4">Danh mục</th>
-              <th class="px-6 py-4 text-right">Giá bán</th>
-              <th class="px-6 py-4 text-center">Tồn kho</th>
-              <th class="px-6 py-4 text-center">Trạng thái</th>
-              <th class="px-6 py-4">Ngày tạo</th>
-              <th class="px-6 py-4 text-right">Hành động</th>
+            <tr class="text-left border-b border-gray-700">
+              <th class="px-6 py-4 text-xs tracking-wider uppercase"
+                >Sản phẩm</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider uppercase">Slug</th>
+              <th class="px-6 py-4 text-xs tracking-wider uppercase"
+                >Danh mục</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider text-right uppercase"
+                >Giá bán</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider text-center uppercase"
+                >Tồn kho</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider text-center uppercase"
+                >Trạng thái</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider uppercase"
+                >Ngày tạo</th
+              >
+              <th class="px-6 py-4 text-xs tracking-wider uppercase"
+                >Hành động</th
+              >
             </tr>
           </thead>
 
@@ -302,25 +348,23 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <a
-            class="px-3 py-1.5 rounded-lg border border-[#232f48] text-[#92a4c9] hover:text-white hover:bg-[#232f48] text-sm transition-colors {data.page <=
-            1
-              ? 'pointer-events-none opacity-50'
-              : ''}"
-            href={buildQs(Math.max(1, data.page - 1))}
+          <button
+            type="button"
+            on:click={() => goPage(data.page - 1)}
+            class="px-3 py-1.5 rounded-lg border border-[#232f48] text-[#92a4c9] hover:text-white hover:bg-[#232f48] text-sm transition-colors
+            {data.page <= 1 ? 'pointer-events-none opacity-50' : ''}"
           >
             Trước
-          </a>
+          </button>
 
-          <a
-            class="px-3 py-1.5 rounded-lg border border-[#232f48] text-[#92a4c9] hover:text-white hover:bg-[#232f48] text-sm transition-colors {data.page >=
-            totalPages
-              ? 'pointer-events-none opacity-50'
-              : ''}"
-            href={buildQs(Math.min(totalPages, data.page + 1))}
+          <button
+            type="button"
+            on:click={() => goPage(data.page + 1)}
+            class="px-3 py-1.5 rounded-lg border border-[#232f48] text-[#92a4c9] hover:text-white hover:bg-[#232f48] text-sm transition-colors
+            {data.page >= totalPages ? 'pointer-events-none opacity-50' : ''}"
           >
             Sau
-          </a>
+          </button>
         </div>
       </div>
     </div>
