@@ -12,7 +12,7 @@
   let product = data?.product;
   let localPreviews: string[] = [];
 
-  // form fields
+  //form fields
   let name = product?.name ?? '';
   let slug = product?.slug ?? '';
   let brand = product?.brand ?? '';
@@ -28,7 +28,7 @@
     : [];
   let newImageUrl = '';
 
-  // upload state
+  //upload state
   let files: FileList | null = null;
   let uploading = false;
   let uploadError = '';
@@ -38,7 +38,7 @@
     const s = (input ?? '')
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // \u0300 – \u036f: Unicode Combining Diacritical Marks: các ký tự dấu: sắc, huyền, hỏi, ngã, nặng...
+      .replace(/[\u0300-\u036f]/g, '') //\u0300 – \u036f: Unicode Combining Diacritical Marks: các ký tự dấu: sắc, huyền, hỏi, ngã, nặng...
       .replace(/[^a-z0-9\s-]/g, '')
       .trim()
       .replace(/\s+/g, '-')
@@ -131,7 +131,7 @@
         localPreviews = [];
         files = null;
 
-        // reset luôn input để lần sau chọn lại cùng file vẫn trigger change
+        //reset luôn input để lần sau chọn lại cùng file vẫn trigger change
         const el = document.getElementById(
           'fileInputEdit'
         ) as HTMLInputElement | null;
@@ -152,38 +152,38 @@
     }
   }
 
-  // enhance() – biến form submit thành “AJAX submit”
-  // Luồng thật khi bấm submit với use:enhance:
-  // 1. SvelteKit chặn reload trang (không refresh full page).
-  // 2. Nó gửi POST lên actions.update trong +page.server.ts.
-  // 3. Server trả response (success/fail).
-  // 4. Client nhận response đó dưới tên result.
-  // - applyAction(result) làm nhiệm vụ:
-  // 1. Lấy data server trả về (ví dụ { ok: true, message: ... } hoặc { message: ... })
-  // 2. “áp” nó vào prop form của trang (cái đang dùng ở UI: form?.message, form.ok)
-  // Tóm gọn: server trả { ok, message } → client nhận result → applyAction(result) cập nhật form → UI hiện message
+  //enhance() – biến form submit thành “AJAX submit”
+  //Luồng thật khi bấm submit với use:enhance:
+  //1. SvelteKit chặn reload trang (không refresh full page).
+  //2. Nó gửi POST lên actions.update trong +page.server.ts.
+  //3. Server trả response (success/fail).
+  //4. Client nhận response đó dưới tên result.
+  //- applyAction(result) làm nhiệm vụ:
+  //1. Lấy data server trả về (ví dụ { ok: true, message: ... } hoặc { message: ... })
+  //2. “áp” nó vào prop form của trang (cái đang dùng ở UI: form?.message, form.ok)
+  //Tóm gọn: server trả { ok, message } → client nhận result → applyAction(result) cập nhật form → UI hiện message
   const enhanceUpdate = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ result, update }) => {
-        // applyAction để cập nhật form.message / form errors
+        //applyAction để cập nhật form.message / form errors
         await applyAction(result);
-        // Không reset form + đừng invalidateAll mặc định
+        //Không reset form + đừng invalidateAll mặc định
         await update({ reset: false, invalidateAll: false });
       };
     });
 
-  // Này sẽ bị reset form sau khi submit bởi vì:
-  // 1. update() (mặc định) thường sẽ reset form HTML sau submit
-  // - Form reset => input quay về “default value” của DOM
-  // - Vì input của không có default value attribute đúng, nên nó về rỗng → thấy bị xóa
-  // 2. invalidateAll() làm rerun load hàng loạt → trang refetch lại → dễ làm “mất trạng thái đang nhập” (vì  đang dùng biến local)
+  //Này sẽ bị reset form sau khi submit bởi vì:
+  //1. update() (mặc định) thường sẽ reset form HTML sau submit
+  //- Form reset => input quay về “default value” của DOM
+  //- Vì input của không có default value attribute đúng, nên nó về rỗng → thấy bị xóa
+  //2. invalidateAll() làm rerun load hàng loạt → trang refetch lại → dễ làm “mất trạng thái đang nhập” (vì  đang dùng biến local)
   const enhanceToggle = (node: HTMLFormElement) =>
     enhance(node, () => {
-      // return async ({ result, update }) => {
-      //   await update(); // cập nhật biến form (để hiện message ok/error)
-      //   await applyAction(result);
-      //   await invalidateAll();
-      // };
+      //return async ({ result, update }) => {
+      //  await update(); //cập nhật biến form (để hiện message ok/error)
+      //  await applyAction(result);
+      //  await invalidateAll();
+      //};
       return async ({ result, update }) => {
         await applyAction(result);
         await update({ reset: false, invalidateAll: false });
@@ -194,7 +194,7 @@
     const input = e.currentTarget as HTMLInputElement;
     files = input.files;
 
-    // clear preview cũ để tránh leak
+    //clear preview cũ để tránh leak
     localPreviews.forEach((u) => URL.revokeObjectURL(u));
     localPreviews = [];
 
@@ -445,12 +445,12 @@
               type="button"
               class="absolute z-10 flex items-center justify-center text-white transition-colors rounded-lg top-2 right-2 size-8 bg-black/60 hover:bg-red-600"
               on:click|stopPropagation={() => {
-                // xoá 1 preview
+                //xoá 1 preview
                 URL.revokeObjectURL(localPreviews[i]);
                 localPreviews = localPreviews.filter((_, k) => k !== i);
 
-                // nếu muốn xoá luôn file tương ứng thì phải rebuild FileList (khó),
-                // nên thường chỉ xoá preview thôi, file vẫn nằm trong input cho tới khi bạn chọn lại.
+                //nếu muốn xoá luôn file tương ứng thì phải rebuild FileList (khó),
+                //nên thường chỉ xoá preview thôi, file vẫn nằm trong input cho tới khi bạn chọn lại.
               }}
               aria-label="Bỏ ảnh preview"
             >

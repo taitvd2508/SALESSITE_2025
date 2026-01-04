@@ -24,7 +24,7 @@
     }
   };
 
-  // build query string giữ filter khi chuyển trang
+  //build query string giữ filter khi chuyển trang
   function buildQs(nextPage: number) {
     const p = new URLSearchParams();
     if (data.filters?.q) p.set('q', data.filters.q);
@@ -46,8 +46,8 @@
   const enhanceToggle = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ update }) => {
-        await update(); // cập nhật dữ liệu sau action
-        await invalidateAll(); // reload load() hiện tại
+        await update(); //cập nhật dữ liệu sau action
+        await invalidateAll(); //reload load() hiện tại
       };
     });
 </script>
@@ -252,7 +252,7 @@
                         >
                       </a>
 
-                      <!-- ✅ Toggle Active/Disable -->
+                      <!--  Toggle Active/Disable -->
                       <form
                         method="POST"
                         action="?/toggleActive"

@@ -11,14 +11,14 @@
 
   export let form: ActionData;
 
-  // Initialize Supabase client for client-side operations (like Resend)
+  //Initialize Supabase client for client-side operations (like Resend)
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
   let loading = false;
   let showPass = false;
 
-  // Form fields state (for preserving values on error)
-  // If form.values exists (from server return), use those, else defaults
+  //Form fields state (for preserving values on error)
+  //If form.values exists (from server return), use those, else defaults
   $: email = form?.values?.email ?? "";
   $: full_name = form?.values?.full_name ?? "";
   $: phone = form?.values?.phone ?? "";
@@ -26,18 +26,18 @@
   let confirm = "";
   let agree = false;
 
-  // Verification UI State
+  //Verification UI State
   let verificationPending = false;
   let timer = 60;
   let timerInterval: any;
-  let pollingInterval: any; // Added polling interval
+  let pollingInterval: any; //Added polling interval
   let resendLoading = false;
 
-  // Update verificationPending if registration was successful
+  //Update verificationPending if registration was successful
   $: if (form?.success) {
     verificationPending = true;
     startTimer();
-    startPolling(); // Start polling when waiting for verification
+    startPolling(); //Start polling when waiting for verification
   }
 
   function startTimer() {
@@ -52,25 +52,25 @@
     }, 1000);
   }
 
-  // Poll for session status via server endpoint
+  //Poll for session status via server endpoint
   function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(async () => {
       try {
-        // Check status from server (which has access to httpOnly cookies set by auth callback)
+        //Check status from server (which has access to httpOnly cookies set by auth callback)
         const res = await fetch("/api/auth/status");
         const { user } = await res.json();
 
         if (user) {
-          // User verified and cookie is detected by server!
+          //User verified and cookie is detected by server!
           clearInterval(pollingInterval);
-          await invalidateAll(); // Refresh all load functions (SiteHeader will update)
-          await goto("/"); // Redirect to home
+          await invalidateAll(); //Refresh all load functions (SiteHeader will update)
+          await goto("/"); //Redirect to home
         }
       } catch (e) {
         console.error("Polling error", e);
       }
-    }, 3000); // Check every 3 seconds
+    }, 3000); //Check every 3 seconds
   }
 
   async function handleResend() {
@@ -82,13 +82,13 @@
         type: "signup",
         email: form.email,
         options: {
-          // Explicitly set the redirect URL for resend as well
+          //Explicitly set the redirect URL for resend as well
           emailRedirectTo: window.location.origin + "/auth/callback",
         },
       });
       if (error) throw error;
 
-      // Restart timer on success
+      //Restart timer on success
       startTimer();
     } catch (err: any) {
       console.error("Resend error:", err);

@@ -29,7 +29,7 @@
     const u = new URL(window.location.href);
     if (!val) u.searchParams.delete(key);
     else u.searchParams.set(key, val);
-    u.searchParams.delete('page'); // đổi filter thì reset page
+    u.searchParams.delete('page'); //đổi filter thì reset page
     goto(u.pathname + '?' + u.searchParams.toString(), { replaceState: true });
   }
 
@@ -50,13 +50,13 @@
     }
   }
 
-  // SEARCH
+  //SEARCH
   function onSearchChange(e: Event) {
     const value = (e.currentTarget as HTMLInputElement).value.trim();
     setParam('q', value);
   }
 
-  // DATE FILTERS
+  //DATE FILTERS
   function onFromDateChange(e: Event) {
     const value = (e.currentTarget as HTMLInputElement).value;
     setParam('from', value);
@@ -67,7 +67,7 @@
     setParam('to', value);
   }
 
-  // METHOD FILTER
+  //METHOD FILTER
   function onMethodChange(e: Event) {
     const select = (e.currentTarget as HTMLSelectElement).value;
     setParam('method', select);

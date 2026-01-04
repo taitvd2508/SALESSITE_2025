@@ -11,4 +11,4 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   };
 };
 
-// chưa login thì redirect về trang login
+//chưa login thì redirect về trang login

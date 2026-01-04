@@ -56,7 +56,7 @@
 
     loading = true;
     try {
-      // 1) Verify current password bằng cách signIn lại
+      //1) Verify current password bằng cách signIn lại
       const { error: reauthErr } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: currentPassword,
@@ -67,7 +67,7 @@
         return;
       }
 
-      // 2) Update password
+      //2) Update password
       const { error: upErr } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -83,8 +83,8 @@
       confirmPassword = '';
 
       await invalidateAll();
-      // optional: đưa về /account
-      // await goto('/account');
+      //optional: đưa về /account
+      //await goto('/account');
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đổi mật khẩu thất bại.';
     } finally {

@@ -13,7 +13,7 @@
     };
   };
 
-  // ✅ default: nếu login -> có data.prefill, guest -> rỗng
+  // default: nếu login -> có data.prefill, guest -> rỗng
   let full_name = data.prefill.full_name;
   let phone = data.prefill.phone;
   let email = data.prefill.email;
@@ -58,7 +58,7 @@
           items: items.map((x) => ({
             product_id: x.product_id,
             quantity: x.quantity,
-            price: x.price, // server sẽ không tin giá này, chỉ gửi để debug
+            price: x.price, //server sẽ không tin giá này, chỉ gửi để debug
           })),
         }),
       });
@@ -77,7 +77,7 @@
   }
 
   onMount(() => {
-    // nếu giỏ trống, đá về cart
+    //nếu giỏ trống, đá về cart
     if (!$cart.items.length) goto('/cart');
   });
 </script>

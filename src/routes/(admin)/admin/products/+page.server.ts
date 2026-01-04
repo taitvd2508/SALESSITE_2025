@@ -5,7 +5,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const q = (url.searchParams.get('q') ?? '').trim();
   const type = url.searchParams.get('type') ?? '';
   const brand = url.searchParams.get('brand') ?? '';
-  const status = url.searchParams.get('status') ?? ''; // active|inactive
+  const status = url.searchParams.get('status') ?? ''; //active|inactive
 
   const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
   const pageSize = 12;
@@ -31,7 +31,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const { data: products, count, error } = await query.range(from, to);
   if (error) throw new Error(error.message);
 
-  // facets
+  //facets
   const { data: typesData } = await locals.supabase
     .from('products')
     .select('type');

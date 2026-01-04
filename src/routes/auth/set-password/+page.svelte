@@ -44,7 +44,7 @@
       if (error) throw error;
 
       okMsg = "Đặt mật khẩu thành công!";
-      // về account hoặc trang chủ
+      //về account hoặc trang chủ
       await goto("/account");
     } catch (e: any) {
       errorMsg = e?.message ?? "Có lỗi xảy ra";

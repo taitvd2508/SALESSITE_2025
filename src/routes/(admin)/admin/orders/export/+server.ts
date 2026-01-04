@@ -1,8 +1,8 @@
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
-  const status = url.searchParams.get('status'); // pending/paid/...
-  const method = url.searchParams.get('method'); // wallet/cod/...
+  const status = url.searchParams.get('status'); //pending/paid/...
+  const method = url.searchParams.get('method'); //wallet/cod/...
   const from = url.searchParams.get('from');
   const to = url.searchParams.get('to');
 
@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     )
     .order('created_at', { ascending: false });
 
-  // ✅ filter theo code (ăn theo URL admin/orders)
+  // filter theo code (ăn theo URL admin/orders)
   if (status) q = q.eq('order_status.code', status);
   if (method) q = q.eq('order_method.code', method);
 
@@ -67,7 +67,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     )
     .join('\r\n');
 
-  // ✅ BOM UTF-8 để Excel không lỗi tiếng Việt
+  // BOM UTF-8 để Excel không lỗi tiếng Việt
   const csv = `\uFEFF${header}\r\n${body}\r\n`;
 
   const filename = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
