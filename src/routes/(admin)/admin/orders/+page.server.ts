@@ -3,6 +3,8 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const q = (url.searchParams.get('q') ?? '').trim();
+  const user = (url.searchParams.get('user') ?? '').trim();
+
   const status = url.searchParams.get('status') ?? ''; // code: pending/paid/...
   const method = url.searchParams.get('method') ?? ''; // code: cod/bank/momo
 
@@ -50,6 +52,9 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       );
     }
   }
+
+  // filter userid
+  if (user) query = query.eq('user_id', user);
 
   // filter status/method by code
   if (status && statusMap.has(status))
