@@ -1,206 +1,422 @@
+<script lang="ts">
+  import { enhance, applyAction } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
+
+  export let data: any;
+
+  const formatDateTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatVND = (n: any) =>
+    new Intl.NumberFormat('vi-VN').format(Number(n ?? 0)) + ' đ';
+
+  let toast = '';
+  let toastTimer: any;
+
+  function showToast(msg: string) {
+    toast = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast = ''), 1600);
+  }
+
+  // form fields (bind from server data)
+  let p = data?.profile;
+
+  let full_name = p?.full_name ?? '';
+  let email = p?.email ?? '';
+  let phone = p?.phone ?? '';
+  let address = p?.address ?? '';
+  let birthday = p?.birthday ?? ''; // yyyy-mm-dd
+  let gender = p?.gender ?? ''; // enum value
+  let role = data?.role ?? 'customer';
+
+  // Re-sync when navigating between users without full reload
+  $: if (data?.profile) {
+    p = data.profile;
+    full_name = p?.full_name ?? '';
+    email = p?.email ?? '';
+    phone = p?.phone ?? '';
+    address = p?.address ?? '';
+    birthday = p?.birthday ?? '';
+    gender = p?.gender ?? '';
+    role = data?.role ?? 'customer';
+  }
+
+  const enhanceSave = (node: HTMLFormElement) =>
+    enhance(node, () => {
+      return async ({ result, update }) => {
+        await update(); // cập nhật form state (nếu bạn return message)
+        await applyAction(result);
+        await invalidateAll(); // reload load()
+
+        // show toast if action success
+        const r: any = result;
+        if (r?.type === 'success') {
+          showToast(r?.data?.message ?? 'Đã lưu thay đổi.');
+        } else if (r?.type === 'failure') {
+          showToast(r?.data?.message ?? 'Lỗi lưu dữ liệu.');
+        }
+      };
+    });
+
+  const enhanceToggle = (node: HTMLFormElement) =>
+    enhance(node, () => {
+      return async ({ result, update }) => {
+        await update();
+        await applyAction(result);
+        await invalidateAll();
+
+        const r: any = result;
+        if (r?.type === 'success') showToast(r?.data?.message ?? 'OK');
+        else if (r?.type === 'failure')
+          showToast(r?.data?.message ?? 'Lỗi thao tác.');
+      };
+    });
+</script>
+
 <svelte:head>
   <title>Admin - Chi tiết người dùng</title>
 </svelte:head>
 
-<div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 md:p-8">
-<div class="max-w-[1200px] mx-auto flex flex-col gap-6">
-<div class="flex flex-col gap-4">
-<a class="flex items-center gap-2 text-text-secondary hover:text-white transition-colors w-fit group" href="#">
-<span class="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
-<span class="text-sm font-medium">Quay lại danh sách</span>
-</a>
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-<div>
-<h1 class="text-3xl font-bold text-white tracking-tight mb-2">Nguyễn Văn A</h1>
-<div class="flex items-center gap-3 text-sm text-text-secondary">
-<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">mail</span> nguyenvana@gmail.com</span>
-<span class="size-1 rounded-full bg-text-secondary/40"></span>
-<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">calendar_month</span> Tham gia: 20/10/2023</span>
-</div>
-</div>
-<div class="flex flex-wrap gap-3">
-<button class="flex items-center gap-2 h-10 px-4 rounded-lg bg-surface-highlight border border-white/10 text-white text-sm font-medium hover:bg-white/5 transition-colors">
-<span class="material-symbols-outlined" style="font-size: 20px;">edit</span>
-                                Chỉnh sửa
-                            </button>
-<button class="flex items-center gap-2 h-10 px-4 rounded-lg border border-red-500/20 bg-red-500/10 text-red-500 text-sm font-medium hover:bg-red-500/20 transition-colors">
-<span class="material-symbols-outlined" style="font-size: 20px;">block</span>
-                                Khóa tài khoản
-                            </button>
-<button class="flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/30 hover:bg-blue-600 transition-all">
-<span class="material-symbols-outlined" style="font-size: 20px;">save</span>
-                                Lưu thay đổi
-                            </button>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-<div class="flex flex-col gap-6">
-<div class="bg-surface-dark border border-surface-highlight rounded-xl p-6 flex flex-col items-center text-center relative overflow-hidden shadow-sm">
-<div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-surface-highlight/50 to-transparent"></div>
-<div class="relative mt-4 mb-4">
-<div class="size-28 rounded-full bg-cover bg-center border-4 border-surface-dark shadow-xl" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA7FvOID_uZJIP8-hLKAPfbeJYA97HIIXMTZoQgqfhKa7SzJGLHQzNgFWBYwlY49R9_XGUGue4uIQCgqqV7jtT0lihVqOALh0EPfqwG8-ZLRITv4dA6yrXxKTKB3s36pGupVVmUmuNoe5TWRDr7ogFB0w2Iry5NBNp7V4U1Q29JcW6PqL8z0yZ8ha-IOk1g1sse4aMT94_3NoDRZvTzPZR5Xa_19Ql-wXoJLQheGz8WCOPKonrr3DIfA3EyWFk1mzwquD9VIghRMg");'></div>
-<div class="absolute bottom-1 right-1 p-1 bg-surface-dark rounded-full">
-<div class="size-4 rounded-full bg-emerald-500 border-2 border-surface-dark shadow-[0_0_8px_rgba(16,185,129,0.6)]" title="Đang hoạt động"></div>
-</div>
-</div>
-<h2 class="text-xl font-bold text-white mb-1">Nguyễn Văn A</h2>
-<p class="text-text-secondary text-sm mb-4">Mã KH: #USER-0089</p>
-<div class="flex gap-2 mb-6">
-<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                     Khách hàng
-                                 </span>
-<span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                     Hoạt động
-                                 </span>
-</div>
-<div class="w-full grid grid-cols-2 gap-4 border-t border-surface-highlight pt-6">
-<div class="flex flex-col">
-<span class="text-2xl font-bold text-white">12</span>
-<span class="text-xs text-text-secondary uppercase tracking-wider font-medium">Đơn hàng</span>
-</div>
-<div class="flex flex-col border-l border-surface-highlight">
-<span class="text-2xl font-bold text-white">15tr</span>
-<span class="text-xs text-text-secondary uppercase tracking-wider font-medium">Chi tiêu</span>
-</div>
-</div>
-</div>
-<div class="bg-surface-dark border border-surface-highlight rounded-xl p-6 shadow-sm">
-<h3 class="text-white font-bold mb-4 text-base">Liên hệ &amp; Bảo mật</h3>
-<div class="flex flex-col gap-4">
-<div class="flex items-center gap-3">
-<div class="size-8 rounded-lg bg-surface-highlight flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-text-secondary text-lg">phone</span>
-</div>
-<div class="overflow-hidden">
-<p class="text-xs text-text-secondary uppercase">Điện thoại</p>
-<p class="text-white text-sm font-medium truncate">0912 345 678</p>
-</div>
-</div>
-<div class="flex items-center gap-3">
-<div class="size-8 rounded-lg bg-surface-highlight flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-text-secondary text-lg">mail</span>
-</div>
-<div class="overflow-hidden">
-<p class="text-xs text-text-secondary uppercase">Email</p>
-<p class="text-white text-sm font-medium truncate">nguyenvana@gmail.com</p>
-</div>
-</div>
-<hr class="border-surface-highlight my-2"/>
-<button class="flex items-center justify-between w-full p-2.5 rounded-lg bg-[#1a2332] border border-transparent hover:border-surface-highlight hover:bg-surface-highlight transition-all group">
-<span class="text-sm text-text-secondary group-hover:text-white font-medium">Đặt lại mật khẩu</span>
-<span class="material-symbols-outlined text-text-secondary text-lg">lock_reset</span>
-</button>
-</div>
-</div>
-</div>
-<div class="lg:col-span-2 flex flex-col gap-6">
-<div class="bg-surface-dark border border-surface-highlight rounded-xl p-6 shadow-sm">
-<div class="flex items-center justify-between mb-6 border-b border-surface-highlight pb-4">
-<h3 class="text-lg font-bold text-white">Thông tin cá nhân</h3>
-<span class="text-xs text-text-secondary">* Các trường bắt buộc</span>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-<div class="space-y-2">
-<label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Họ và tên</label>
-<input class="w-full bg-[#1a2332] border border-surface-highlight rounded-lg px-4 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-text-secondary/50" type="text" value="Nguyễn Văn A"/>
-</div>
-<div class="space-y-2">
-<label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Số điện thoại</label>
-<input class="w-full bg-[#1a2332] border border-surface-highlight rounded-lg px-4 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-text-secondary/50" type="text" value="0912 345 678"/>
-</div>
-<div class="space-y-2">
-<label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Email</label>
-<input class="w-full bg-[#1a2332] border border-surface-highlight rounded-lg px-4 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-text-secondary/50" type="email" value="nguyenvana@gmail.com"/>
-</div>
-<div class="space-y-2">
-<label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Vai trò</label>
-<div class="relative">
-<select class="appearance-none w-full bg-[#1a2332] border border-surface-highlight text-white text-sm rounded-lg py-2.5 pl-4 pr-10 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer">
-<option selected="">Khách hàng</option>
-<option>Nhân viên</option>
-<option>Admin</option>
-</select>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-<span class="material-symbols-outlined" style="font-size: 20px;">expand_more</span>
-</div>
-</div>
-</div>
-<div class="md:col-span-2 space-y-2">
-<label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Địa chỉ giao hàng mặc định</label>
-<textarea class="w-full bg-[#1a2332] border border-surface-highlight rounded-lg px-4 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all h-24 resize-none placeholder:text-text-secondary/50">Số 123, Đường ABC, Phường Đa Kao, Quận 1, TP. Hồ Chí Minh</textarea>
-</div>
-</div>
-</div>
-<div class="bg-surface-dark border border-surface-highlight rounded-xl overflow-hidden shadow-sm flex flex-col h-full">
-<div class="px-6 py-4 border-b border-surface-highlight flex justify-between items-center bg-[#151c2a]">
-<h3 class="text-base font-bold text-white">Đơn hàng gần đây</h3>
-<a class="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1" href="#">
-                                    Xem tất cả <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</a>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead class="bg-surface-dark text-text-secondary text-xs uppercase font-semibold tracking-wider">
-<tr>
-<th class="px-6 py-4">Mã đơn</th>
-<th class="px-6 py-4">Ngày đặt</th>
-<th class="px-6 py-4">Tổng tiền</th>
-<th class="px-6 py-4">Trạng thái</th>
-<th class="px-6 py-4 text-right">Thao tác</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-surface-highlight text-sm">
-<tr class="hover:bg-surface-highlight/30 transition-colors">
-<td class="px-6 py-4 text-white font-medium">#ORD-7752</td>
-<td class="px-6 py-4 text-text-secondary">24/10/2023</td>
-<td class="px-6 py-4 text-white">2,500,000đ</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">
-                                                     Hoàn thành
-                                                 </span>
-</td>
-<td class="px-6 py-4 text-right">
-<button class="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-surface-highlight transition-colors" title="Xem chi tiết">
-<span class="material-symbols-outlined text-[20px]">visibility</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-surface-highlight/30 transition-colors">
-<td class="px-6 py-4 text-white font-medium">#ORD-7721</td>
-<td class="px-6 py-4 text-text-secondary">15/09/2023</td>
-<td class="px-6 py-4 text-white">1,200,000đ</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                                                     Đang giao
-                                                 </span>
-</td>
-<td class="px-6 py-4 text-right">
-<button class="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-surface-highlight transition-colors" title="Xem chi tiết">
-<span class="material-symbols-outlined text-[20px]">visibility</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-surface-highlight/30 transition-colors">
-<td class="px-6 py-4 text-white font-medium">#ORD-6684</td>
-<td class="px-6 py-4 text-text-secondary">02/08/2023</td>
-<td class="px-6 py-4 text-white">550,000đ</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
-                                                     Đã hủy
-                                                 </span>
-</td>
-<td class="px-6 py-4 text-right">
-<button class="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-surface-highlight transition-colors" title="Xem chi tiết">
-<span class="material-symbols-outlined text-[20px]">visibility</span>
-</button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-</div>
-</div>
+{#if toast}
+  <div class="fixed top-4 right-4 z-[9999]">
+    <div
+      class="px-4 py-3 text-sm font-bold text-white shadow-lg rounded-xl bg-primary/90 shadow-blue-900/30"
+    >
+      {toast}
+    </div>
+  </div>
+{/if}
+
+<div
+  class="flex-1 p-4 overflow-y-auto bg-background-light dark:bg-background-dark md:p-8"
+>
+  <div class="max-w-[1200px] mx-auto flex flex-col gap-6">
+    <div class="flex flex-col gap-4">
+      <a
+        class="flex items-center gap-2 transition-colors text-text-secondary hover:text-white w-fit group"
+        href="/admin/users"
+      >
+        <span
+          class="text-sm transition-transform material-symbols-outlined group-hover:-translate-x-1"
+          >arrow_back</span
+        >
+        <span class="text-sm font-medium">Quay lại danh sách</span>
+      </a>
+
+      {#if !data?.profile}
+        <div
+          class="p-6 text-red-200 border border-red-500/30 bg-red-500/10 rounded-xl"
+        >
+          Không tìm thấy người dùng.
+        </div>
+      {:else}
+        <div
+          class="flex flex-col justify-between gap-4 md:flex-row md:items-end"
+        >
+          <div>
+            <h1 class="mb-2 text-3xl font-bold tracking-tight text-white">
+              {data.profile.full_name ?? '—'}
+            </h1>
+
+            <div
+              class="flex flex-wrap items-center gap-3 text-sm text-text-secondary"
+            >
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">mail</span>
+                {data.profile.email ?? '—'}
+              </span>
+
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">call</span>
+                {data.profile.phone ?? '—'}
+              </span>
+
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">badge</span>
+                Role: <b class="text-white">{data.role}</b>
+              </span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <a
+              class="flex items-center gap-2 px-4 text-white transition-colors border h-11 rounded-xl border-surface-highlight hover:bg-surface-highlight"
+              href={`/admin/orders?user=${encodeURIComponent(data.profile.id)}`}
+              title="Xem toàn bộ đơn hàng của user"
+            >
+              <span class="material-symbols-outlined text-[20px]"
+                >receipt_long</span
+              >
+              Xem đơn hàng
+            </a>
+
+            <!-- Toggle active (server sẽ chặn nếu không phải admin) -->
+            <form method="POST" action="?/toggleActive" use:enhanceToggle>
+              <input
+                type="hidden"
+                name="active"
+                value={data.profile.is_active ? 'false' : 'true'}
+              />
+              <button
+                type="submit"
+                class="flex items-center gap-2 px-4 text-white transition-colors shadow-lg h-11 rounded-xl bg-primary hover:bg-blue-600 shadow-blue-900/20"
+              >
+                <span class="material-symbols-outlined text-[20px]">
+                  {data.profile.is_active ? 'block' : 'verified_user'}
+                </span>
+                {data.profile.is_active ? 'Khoá tài khoản' : 'Mở khoá'}
+              </button>
+            </form>
+          </div>
+        </div>
+      {/if}
+    </div>
+
+    {#if data?.profile}
+      <!-- Stats -->
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div
+          class="p-5 border rounded-xl border-surface-highlight bg-surface-dark"
+        >
+          <div class="text-sm text-text-secondary">Số đơn gần đây</div>
+          <div class="mt-1 text-2xl font-black text-white">
+            {data.stats?.count ?? 0}
+          </div>
+        </div>
+        <div
+          class="p-5 border rounded-xl border-surface-highlight bg-surface-dark"
+        >
+          <div class="text-sm text-text-secondary">
+            Tổng tiền (10 đơn gần nhất)
+          </div>
+          <div class="mt-1 text-2xl font-black text-white">
+            {formatVND(data.stats?.total ?? 0)}
+          </div>
+        </div>
+        <div
+          class="p-5 border rounded-xl border-surface-highlight bg-surface-dark"
+        >
+          <div class="text-sm text-text-secondary">Trạng thái</div>
+          {#if data.profile.is_active}
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm font-bold border rounded-full border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+            >
+              <span class="rounded-full size-2 bg-emerald-400"></span>
+              Active
+            </div>
+          {:else}
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm font-bold text-red-200 border rounded-full border-red-500/30 bg-red-500/10"
+            >
+              <span class="bg-red-400 rounded-full size-2"></span>
+              Locked
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Profile form -->
+      <div
+        class="p-6 border shadow-sm bg-surface-dark border-surface-highlight rounded-xl"
+      >
+        <div class="flex items-center justify-between gap-3 mb-5">
+          <div class="text-lg font-bold text-white">Thông tin người dùng</div>
+          <div class="text-xs text-text-secondary">
+            Tạo lúc: {formatDateTime(data.profile.created_at)}
+          </div>
+        </div>
+
+        <form
+          method="POST"
+          action="?/save"
+          use:enhanceSave
+          class="grid grid-cols-1 gap-4 md:grid-cols-12"
+        >
+          <div class="md:col-span-6 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Họ tên</label
+            >
+            <input
+              name="full_name"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={full_name}
+              placeholder="Nguyễn Văn A"
+            />
+          </div>
+
+          <div class="md:col-span-6 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Email</label
+            >
+            <input
+              name="email"
+              type="email"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={email}
+              placeholder="email@example.com"
+            />
+          </div>
+
+          <div class="md:col-span-4 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >SĐT</label
+            >
+            <input
+              name="phone"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={phone}
+              placeholder="09xxxxxxxx"
+            />
+          </div>
+
+          <div class="md:col-span-4 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Ngày sinh</label
+            >
+            <input
+              name="birthday"
+              type="date"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={birthday}
+            />
+          </div>
+
+          <div class="md:col-span-4 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Giới tính</label
+            >
+            <select
+              name="gender"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={gender}
+            >
+              <option value="">—</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-8 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Địa chỉ</label
+            >
+            <input
+              name="address"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={address}
+              placeholder="Số nhà, đường, phường/xã..."
+            />
+          </div>
+
+          <div class="md:col-span-4 flex flex-col gap-1.5">
+            <label class="ml-1 text-xs font-medium text-text-secondary"
+              >Role</label
+            >
+            <select
+              name="role"
+              class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+              bind:value={role}
+            >
+              <option value="customer">customer</option>
+              <option value="staff">staff</option>
+              <option value="admin">admin</option>
+            </select>
+            <div class="mt-1 text-xs text-text-secondary">
+              * Chỉ Admin lưu được thay đổi role.
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2 md:col-span-12">
+            <button
+              type="submit"
+              class="px-5 font-bold text-white transition-colors shadow-lg h-11 rounded-xl bg-primary hover:bg-blue-600 shadow-blue-900/20"
+            >
+              Lưu thay đổi
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Orders preview -->
+      <div
+        class="p-6 border shadow-sm bg-surface-dark border-surface-highlight rounded-xl"
+      >
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="text-lg font-bold text-white">10 đơn gần nhất</div>
+          <a
+            class="text-sm font-bold transition-colors text-primary hover:text-primary/80"
+            href={`/admin/orders?user=${encodeURIComponent(data.profile.id)}`}
+          >
+            Xem tất cả →
+          </a>
+        </div>
+
+        {#if (data.orders?.length ?? 0) === 0}
+          <div class="text-text-secondary">Chưa có đơn hàng.</div>
+        {:else}
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-surface-highlight">
+              <thead class="bg-[#151c2a]">
+                <tr>
+                  <th
+                    class="px-4 py-3 text-xs font-semibold tracking-wider text-left uppercase text-text-secondary"
+                    >Mã đơn</th
+                  >
+                  <th
+                    class="px-4 py-3 text-xs font-semibold tracking-wider text-left uppercase text-text-secondary"
+                    >Tổng tiền</th
+                  >
+                  <th
+                    class="px-4 py-3 text-xs font-semibold tracking-wider text-left uppercase text-text-secondary"
+                    >Ngày tạo</th
+                  >
+                  <th
+                    class="px-4 py-3 text-xs font-semibold tracking-wider text-right uppercase text-text-secondary"
+                    >Chi tiết</th
+                  >
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-highlight bg-surface-dark">
+                {#each data.orders as o}
+                  <tr class="hover:bg-surface-highlight/30">
+                    <td class="px-4 py-3 font-bold text-white">#{o.id}</td>
+                    <td class="px-4 py-3 text-white"
+                      >{formatVND(o.total_price)}</td
+                    >
+                    <td class="px-4 py-3 text-text-secondary"
+                      >{formatDateTime(o.created_at)}</td
+                    >
+                    <td class="px-4 py-3 text-right">
+                      <a
+                        class="inline-flex items-center gap-2 px-3 py-2 text-white transition-colors border rounded-lg border-surface-highlight hover:bg-surface-highlight"
+                        href={`/admin/orders/${o.id}`}
+                      >
+                        <span class="material-symbols-outlined text-[18px]"
+                          >visibility</span
+                        >
+                        Xem
+                      </a>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
 </div>
