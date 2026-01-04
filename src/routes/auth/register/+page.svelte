@@ -1,98 +1,132 @@
 <script lang="ts">
-  import { createClient } from "@supabase/supabase-js";
+  import { createClient } from '@supabase/supabase-js';
   import {
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
-  } from "$env/static/public";
-  import { enhance } from "$app/forms";
-  import { onMount, onDestroy } from "svelte";
-  import { goto, invalidateAll } from "$app/navigation";
-  import type { ActionData } from "./$types";
+  } from '$env/static/public';
+  import { enhance } from '$app/forms';
+  import { onDestroy } from 'svelte';
+  import { goto, invalidateAll } from '$app/navigation';
+  import type { ActionData } from './$types';
 
   export let form: ActionData;
 
-  // Initialize Supabase client for client-side operations (like Resend)
+  // Supabase client (client-side) - dùng để signUp/resend để có PKCE code_verifier
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
   let loading = false;
+  let resendLoading = false;
   let showPass = false;
+  let validating = false;
+  let signingUp = false;
 
-  // Form fields state (for preserving values on error)
-  // If form.values exists (from server return), use those, else defaults
-  $: email = form?.values?.email ?? "";
-  $: full_name = form?.values?.full_name ?? "";
-  $: phone = form?.values?.phone ?? "";
-  let password = "";
-  let confirm = "";
+  // nút dùng biến này
+  $: loading = validating || signingUp;
+
+  // Fields (giữ lại value khi server trả lỗi validation)
+  $: email = (form?.values?.email ?? '').toString();
+  $: full_name = (form?.values?.full_name ?? '').toString();
+  $: phone = (form?.values?.phone ?? '').toString();
+
+  // password/confirm/agree là state ở client (KHÔNG trả về từ server)
+  let password = '';
+  let confirm = '';
   let agree = false;
 
-  // Verification UI State
+  // Client-side error (từ supabase.auth.signUp/resend)
+  let clientError = '';
+
+  // UI chờ verify email
   let verificationPending = false;
   let timer = 60;
   let timerInterval: any;
-  let pollingInterval: any; // Added polling interval
-  let resendLoading = false;
+  let pollingInterval: any;
 
-  // Update verificationPending if registration was successful
-  $: if (form?.success) {
-    verificationPending = true;
-    startTimer();
-    startPolling(); // Start polling when waiting for verification
-  }
+  // Chặn gọi signUp nhiều lần khi SvelteKit update form
+  let didSignup = false;
 
   function startTimer() {
     timer = 60;
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
-      if (timer > 0) {
-        timer--;
-      } else {
-        clearInterval(timerInterval);
-      }
+      if (timer > 0) timer--;
+      else clearInterval(timerInterval);
     }, 1000);
   }
 
-  // Poll for session status via server endpoint
+  // Poll session status (server đọc httpOnly cookie). Khi cookie có → header/site layout update → về trang chủ
   function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(async () => {
       try {
-        // Check status from server (which has access to httpOnly cookies set by auth callback)
-        const res = await fetch("/api/auth/status");
+        const res = await fetch('/api/auth/status');
         const { user } = await res.json();
-
         if (user) {
-          // User verified and cookie is detected by server!
           clearInterval(pollingInterval);
-          await invalidateAll(); // Refresh all load functions (SiteHeader will update)
-          await goto("/"); // Redirect to home
+          await invalidateAll();
+          await goto('/');
         }
       } catch (e) {
-        console.error("Polling error", e);
+        console.error('Polling error', e);
       }
-    }, 3000); // Check every 3 seconds
+    }, 3000);
   }
 
-  async function handleResend() {
-    if (timer > 0 || !form?.email) return;
+  async function doClientSignUp() {
+    clientError = '';
+    signingUp = true;
 
-    resendLoading = true;
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: form.email,
+      const redirect = new URL('/auth/callback', window.location.origin);
+      redirect.searchParams.set('next', '/auth/login');
+
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
         options: {
-          // Explicitly set the redirect URL for resend as well
-          emailRedirectTo: window.location.origin + "/auth/callback",
+          data: { full_name, phone },
+          emailRedirectTo: redirect.toString(),
         },
       });
       if (error) throw error;
 
-      // Restart timer on success
+      verificationPending = true;
+      startTimer();
+      startPolling();
+    } catch (err: any) {
+      didSignup = false;
+      clientError = err?.message ?? 'Đăng ký thất bại';
+    } finally {
+      signingUp = false;
+    }
+  }
+
+  // ✅ Khi server validate xong và trả success=true → gọi signUp ở client (để có PKCE verifier)
+  $: if (form?.success && !didSignup) {
+    didSignup = true;
+    doClientSignUp();
+  }
+
+  async function handleResend() {
+    if (timer > 0 || !email.trim()) return;
+
+    resendLoading = true;
+    clientError = '';
+    try {
+      const redirect = new URL('/auth/callback', window.location.origin);
+      redirect.searchParams.set('next', '/');
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: redirect.toString() },
+      });
+
+      if (error) throw error;
       startTimer();
     } catch (err: any) {
-      console.error("Resend error:", err);
-      alert(err.message || "Failed to resend email");
+      console.error('Resend error:', err);
+      clientError = err?.message ?? 'Gửi lại email thất bại';
     } finally {
       resendLoading = false;
     }
@@ -137,9 +171,9 @@
           <div
             class="flex flex-col gap-6 p-6 rounded-2xl bg-[#192233] border border-[#324467] shadow-xl"
           >
-            <div class="flex flex-col items-center text-center gap-4">
-              <div class="p-4 rounded-full bg-primary/10 text-primary mb-2">
-                <span class="material-symbols-outlined text-4xl"
+            <div class="flex flex-col items-center gap-4 text-center">
+              <div class="p-4 mb-2 rounded-full bg-primary/10 text-primary">
+                <span class="text-4xl material-symbols-outlined"
                   >mark_email_unread</span
                 >
               </div>
@@ -147,9 +181,9 @@
                 Kiểm tra email của bạn
               </h2>
               <p class="text-[#92a4c9] text-base leading-relaxed max-w-md">
-                An email with a verification link has been sent to <strong
-                  >{form?.email}</strong
-                >. Please use it to login.
+                Một email chứa liên kết xác minh đã được gửi tới <strong
+                  >{form?.values?.email}</strong
+                >. Vui lòng sử dụng liên kết này để đăng nhập.
               </p>
             </div>
 
@@ -157,28 +191,28 @@
               class="p-4 rounded-lg bg-[#232f48]/50 border border-[#324467]/50"
             >
               <p class="text-sm text-[#92a4c9] text-center">
-                Haven't received any email yet? Please check the spam or Resend
-                after {timer} seconds.
+                Chưa nhận được email? Hãy kiểm tra hộp thư rác (Spam) hoặc gửi
+                lại sau {timer} giây.
               </p>
             </div>
 
             <button
-              class="w-full h-12 rounded-lg font-bold text-base tracking-wide transition-all border border-primary text-primary hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-primary disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              class="flex items-center justify-center w-full h-12 gap-2 text-base font-bold tracking-wide transition-all border rounded-lg border-primary text-primary hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-primary disabled:cursor-not-allowed"
               on:click={handleResend}
-              disabled={timer > 0 || resendLoading}
+              disabled={resendLoading || timer > 0}
             >
               {#if resendLoading}
                 <span
-                  class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+                  class="w-4 h-4 border-2 border-current rounded-full border-t-transparent animate-spin"
                 ></span>
                 Đang gửi...
               {:else if timer > 0}
-                Resend in {timer}s
+                Gửi lại sau {timer} giây
               {:else}
                 <span class="material-symbols-outlined text-[20px]"
                   >refresh</span
                 >
-                Resend Email
+                Gửi lại email
               {/if}
             </button>
 
@@ -190,7 +224,7 @@
                 <span class="material-symbols-outlined text-[16px]"
                   >arrow_back</span
                 >
-                Back to Login
+                Quay lại trang đăng nhập
               </a>
             </div>
           </div>
@@ -200,10 +234,14 @@
             class="flex flex-col gap-5"
             method="POST"
             use:enhance={() => {
-              loading = true;
+              validating = true;
+              clientError = '';
+              didSignup = false;
+              verificationPending = false;
+
               return async ({ update }) => {
-                await update();
-                loading = false;
+                await update({ reset: false }); // validate server
+                validating = false; // chỉ tắt validating, KHÔNG đụng signingUp
               };
             }}
           >
@@ -303,7 +341,7 @@
                     on:click={() => (showPass = !showPass)}
                   >
                     <span class="material-symbols-outlined text-[20px]"
-                      >{showPass ? "visibility_off" : "visibility"}</span
+                      >{showPass ? 'visibility_off' : 'visibility'}</span
                     >
                   </button>
                 </div>
@@ -373,6 +411,14 @@
               </label>
             </div>
 
+            {#if clientError}
+              <div
+                class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
+              >
+                {clientError}
+              </div>
+            {/if}
+
             {#if form?.error}
               <div
                 class="px-4 py-3 text-sm text-red-200 border rounded-xl border-red-500/40 bg-red-500/10"
@@ -385,7 +431,7 @@
               class="w-full bg-primary hover:bg-blue-600 text-white h-12 rounded-lg font-bold text-base tracking-wide transition-all shadow-[0_0_20px_rgba(17,82,212,0.3)] hover:shadow-[0_0_30px_rgba(17,82,212,0.5)] mt-2 disabled:opacity-60"
               disabled={loading}
             >
-              {loading ? "Đang tạo..." : "Đăng ký tài khoản"}
+              {loading ? 'Đang tạo...' : 'Đăng ký tài khoản'}
             </button>
 
             <!-- Divider -->
