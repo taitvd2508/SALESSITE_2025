@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 	const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
 	const pageSize = 12;
 
-	// ✅ parse min/max đúng cách
+	//parse min/max đúng cách
 	const minStr = url.searchParams.get('min');
 	const maxStr = url.searchParams.get('max');
 	const min = minStr !== null && minStr !== '' ? Number(minStr) : null;
@@ -26,28 +26,28 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 		.select('id,slug,name,brand,type,price,old_price,quantity,images,created_at', { count: 'exact' })
 		.eq('active', true);
 
-	// Search
+	//Search
 	if (q) query = query.ilike('name', `%${q}%`);
 
-	// Filters
+	//Filters
 	if (type) query = query.eq('type', type);
 	if (brand) query = query.eq('brand', brand);
 	if (min !== null && !Number.isNaN(min)) query = query.gte('price', min);
 	if (max !== null && !Number.isNaN(max)) query = query.lte('price', max);
 
-	// Sort
+	//Sort
 	if (sort === 'price_asc') query = query.order('price', { ascending: true });
 	else if (sort === 'price_desc') query = query.order('price', { ascending: false });
 	else query = query.order('created_at', { ascending: false });
 
-	// Pagination
+	//Pagination
 	const from = (page - 1) * pageSize;
 	const to = from + pageSize - 1;
 
 	const { data: products, count, error } = await query.range(from, to);
 	if (error) throw new Error(error.message);
 
-	// Facets
+	//Facets
 	const { data: typesData } = await supabase.from('products').select('type').eq('active', true).limit(1000);
 	const { data: brandsData } = await supabase.from('products').select('brand').eq('active', true).limit(1000);
 

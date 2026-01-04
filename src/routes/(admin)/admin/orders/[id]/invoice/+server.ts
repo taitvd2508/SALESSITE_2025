@@ -30,11 +30,11 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
   const id = Number(params.id);
   if (!Number.isFinite(id)) throw error(400, 'Invalid order id');
 
-  // bạn đã chặn staff/admin ở (admin)/+layout.server.ts rồi,
-  // nên ở đây chỉ cần fetch.
+  //bạn đã chặn staff/admin ở (admin)/+layout.server.ts rồi,
+  //nên ở đây chỉ cần fetch.
   const supabase = locals.supabase;
 
-  // 1) Order + status/method (join qua FK)
+  //1) Order + status/method (join qua FK)
   const { data: order, error: oErr } = await supabase
     .from('orders')
     .select(
@@ -49,7 +49,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 
   if (oErr || !order) throw error(404, oErr?.message ?? 'Order not found');
 
-  // 2) Details + product
+  //2) Details + product
   const { data: items, error: dErr } = await supabase
     .from('order_details')
     .select(
@@ -83,7 +83,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
     })
     .join('');
 
-  const autoPrint = url.searchParams.get('print') !== '0'; // default: print
+  const autoPrint = url.searchParams.get('print') !== '0'; //default: print
   const download = url.searchParams.get('download') === '1';
 
   const html = `<!doctype html>

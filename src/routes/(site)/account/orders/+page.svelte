@@ -8,7 +8,7 @@
     orders: any[];
     guestOrder: any | null;
 
-    // ✅ thêm các field bạn đang dùng ở template (nếu có)
+    //thêm các field bạn đang dùng ở template (nếu có)
     lookupError?: string | null;
   };
 
@@ -33,7 +33,7 @@
     return images?.[0] ?? '/images/placeholder-product.png';
   }
 
-  // ✅ thay cho (data as any).lookupError trong template
+  //thay cho (data as any).lookupError trong template
   $: lookupError = data?.lookupError ?? null;
 
   $: filteredOrders =

@@ -31,8 +31,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   await requireStaff(locals);
 
   const q = (url.searchParams.get('q') ?? '').trim();
-  const roleFilter = (url.searchParams.get('role') ?? '').trim(); // admin|staff|customer
-  const status = (url.searchParams.get('status') ?? '').trim(); // active|inactive
+  const roleFilter = (url.searchParams.get('role') ?? '').trim(); //admin|staff|customer
+  const status = (url.searchParams.get('status') ?? '').trim(); //active|inactive
 
   const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
   const pageSize = 12;
@@ -50,8 +50,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   if (status === 'inactive') query = query.eq('is_active', false);
 
   if (q) {
-    // search basic: name/email/phone
-    // Supabase supports OR via `.or()`
+    //search basic: name/email/phone
+    //Supabase supports OR via `.or()`
     query = query.or(
       `full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`
     );

@@ -11,11 +11,11 @@
   let quantity: any = 0;
   let description = '';
 
-  // URL images (dán link)
+  //URL images (dán link)
   let images: string[] = [];
   let imageInput = '';
 
-  // File upload
+  //File upload
   let filePreviews: { url: string; name: string }[] = [];
 
   function addImageUrl() {
@@ -32,7 +32,7 @@
   function onPickFiles(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    // preview
+    //preview
     filePreviews = files.map((f) => ({
       name: f.name,
       url: URL.createObjectURL(f),
@@ -42,8 +42,8 @@
   function removePreview(i: number) {
     const keep = filePreviews.filter((_, idx) => idx !== i);
     filePreviews = keep;
-    // NOTE: không thể “xóa 1 file” khỏi input.files một cách chuẩn trong browser.
-    // Nếu cần xóa từng file thật sự: làm custom uploader (drag-drop) + submit bằng fetch.
+    //NOTE: không thể “xóa 1 file” khỏi input.files một cách chuẩn trong browser.
+    //Nếu cần xóa từng file thật sự: làm custom uploader (drag-drop) + submit bằng fetch.
   }
 </script>
 

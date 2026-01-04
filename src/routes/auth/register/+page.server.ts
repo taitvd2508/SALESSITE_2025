@@ -39,11 +39,11 @@ export const actions: Actions = {
       });
     }
 
-    // KHÔNG signUp ở server nữa (tránh lỗi code_verifier)
+    //KHÔNG signUp ở server nữa (tránh lỗi code_verifier)
     return {
       success: true,
       values: { email: email.trim(), full_name, phone },
-      // Không trả password/confirm về client
+      //Không trả password/confirm về client
     };
   },
 };

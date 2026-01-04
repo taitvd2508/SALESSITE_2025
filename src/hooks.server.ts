@@ -7,10 +7,10 @@ import {
 } from "$env/static/public";
 
 export const handle: Handle = async ({ event, resolve }) => {
-  // 1) cookie name để tracking hành vi
+  //1) cookie name để tracking hành vi
   const cookieName = "tt_sid";
 
-  // nếu chưa có cookie => tạo mới
+  //nếu chưa có cookie => tạo mới
   let sid = event.cookies.get(cookieName);
   if (!sid) {
     sid = randomUUID();
@@ -23,7 +23,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     });
   }
 
-  // 2) attach supabase client vào locals (anon key)
+  //2) attach supabase client vào locals (anon key)
   event.locals.supabase = createServerClient(
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
@@ -41,10 +41,10 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   );
 
-  // 3) nếu bạn muốn tiện dùng sid ở mọi nơi
+  //3) nếu bạn muốn tiện dùng sid ở mọi nơi
   event.locals.tt_sid = sid;
 
-  // Helper secure getSession
+  //Helper secure getSession
   event.locals.getSession = async () => {
     const {
       data: { session },
@@ -58,7 +58,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     } = await event.locals.supabase.auth.getUser();
 
     if (error) {
-      // JWT validation failed
+      //JWT validation failed
       return { session: null, user: null };
     }
 
