@@ -11,7 +11,7 @@ type PaymentCode = 'cod' | 'bank' | 'wallet';
 type CheckoutItem = {
   product_id: number;
   quantity: number;
-  price?: number; // client gửi cho vui, server không tin
+  price?: number; //client gửi cho vui, server không tin
 };
 
 export const POST: RequestHandler = async (event) => {
@@ -61,7 +61,7 @@ export const POST: RequestHandler = async (event) => {
     );
   }
 
-  // lấy user hiện tại (nếu đã login)
+  //lấy user hiện tại (nếu đã login)
   let user_id: string | null = null;
   try {
     const { data } = await locals.supabase.auth.getUser();
@@ -70,7 +70,7 @@ export const POST: RequestHandler = async (event) => {
     user_id = null;
   }
 
-  // 1) Tính tổng tiền dựa trên DB
+  //1) Tính tổng tiền dựa trên DB
   const ids = items.map((x) => x.product_id);
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
@@ -101,7 +101,7 @@ export const POST: RequestHandler = async (event) => {
     total_price += Number(p.price) * it.quantity;
   }
 
-  // 2) method_id theo code
+  //2) method_id theo code
   const { data: methodRow, error: methodErr } = await admin
     .from('order_method')
     .select('id')
@@ -112,7 +112,7 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: methodErr.message }, { status: 500 });
   const method_id = methodRow.id;
 
-  // 3) status_id pending
+  //3) status_id pending
   const { data: statusRow, error: statusErr } = await admin
     .from('order_status')
     .select('id')
@@ -123,7 +123,7 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: statusErr.message }, { status: 500 });
   const status_id = statusRow.id;
 
-  // 4) tạo order
+  //4) tạo order
   const { data: order, error: orderErr } = await admin
     .from('orders')
     .insert({
@@ -143,7 +143,7 @@ export const POST: RequestHandler = async (event) => {
   if (orderErr)
     return json({ ok: false, error: orderErr.message }, { status: 500 });
 
-  // 5) order_details + rollback nếu lỗi
+  //5) order_details + rollback nếu lỗi
   const details = items.map((it) => {
     const p = priceMap.get(it.product_id);
     return {
@@ -160,7 +160,7 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: detErr.message }, { status: 500 });
   }
 
-  // 6) purchase events + rollback nếu lỗi
+  //6) purchase events + rollback nếu lỗi
   const purchaseEvents = items.map((it) => ({
     session_id: sid,
     event_type: 'purchase',
@@ -179,12 +179,12 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: evErr.message }, { status: 500 });
   }
 
-  // 7) Guest: tạo user + update profile (không phụ thuộc email gửi được)
+  //7) Guest: tạo user + update profile (không phụ thuộc email gửi được)
   if (!user_id) {
     const redirectTo = `${event.url.origin}/auth/callback`;
 
     try {
-      // A) tìm user theo email trước (đỡ tạo trùng)
+      //A) tìm user theo email trước (đỡ tạo trùng)
       let targetUserId: string | null = null;
 
       const { data: usersRes, error: listErr } =
@@ -196,7 +196,7 @@ export const POST: RequestHandler = async (event) => {
         targetUserId = u?.id ?? null;
       }
 
-      // B) nếu chưa có user: thử invite (gửi mail)
+      //B) nếu chưa có user: thử invite (gửi mail)
       if (!targetUserId) {
         const { data: inv, error: invErr } =
           await admin.auth.admin.inviteUserByEmail(email, {
@@ -210,7 +210,7 @@ export const POST: RequestHandler = async (event) => {
           console.log('INVITE ERROR status:', (invErr as any).status);
           console.log('INVITE ERROR full:', JSON.stringify(invErr, null, 2));
 
-          // C) fallback: createUser để chắc chắn có auth.users => trigger tạo profiles/user_roles
+          //C) fallback: createUser để chắc chắn có auth.users => trigger tạo profiles/user_roles
           const { data: created, error: createErr } =
             await admin.auth.admin.createUser({
               email,
@@ -228,7 +228,7 @@ export const POST: RequestHandler = async (event) => {
         }
       }
 
-      // D) update profile từ dữ liệu checkout (nếu bạn đã thêm profiles.email thì càng chuẩn)
+      //D) update profile từ dữ liệu checkout (nếu bạn đã thêm profiles.email thì càng chuẩn)
       if (targetUserId) {
         const { error: upErr } = await admin
           .from('profiles')
@@ -239,7 +239,7 @@ export const POST: RequestHandler = async (event) => {
       }
     } catch (e) {
       console.log('guest account flow error:', e);
-      // không chặn checkout
+      //không chặn checkout
     }
   }
 

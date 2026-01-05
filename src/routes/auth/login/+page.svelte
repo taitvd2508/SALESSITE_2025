@@ -27,15 +27,15 @@
           "Email not confirmed": "Email chưa được xác nhận",
         };
         errorMsg = error
-          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại") // nếu có error thì
-          : "Không tạo được phiên đăng nhập"; // còn ko thì
+          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại") //nếu có error thì
+          : "Không tạo được phiên đăng nhập"; //còn ko thì
         return;
       }
 
-      // redirect sau khi login success
+      //redirect sau khi login success
       const next =
         new URLSearchParams(window.location.search).get("next") ?? "/account";
-      await invalidateAll(); //SSR reload theo cookie mới // để header/layout refresh ngay.
+      await invalidateAll(); //SSR reload theo cookie mới //để header/layout refresh ngay.
       await goto(next);
     } catch (err: any) {
       errorMsg = err?.message ?? "Đăng nhập thất bại";

@@ -39,7 +39,7 @@
 
     if (typeof nextPage === 'number')
       u.searchParams.set('page', String(nextPage));
-    else u.searchParams.delete('page'); // đổi filter => về page 1
+    else u.searchParams.delete('page'); //đổi filter => về page 1
 
     return u.pathname + '?' + u.searchParams.toString();
   }
@@ -69,7 +69,7 @@
     }
   }
 
-  // FILTER HANDLERS
+  //FILTER HANDLERS
   function onSearchChange(e: Event) {
     const v = (e.currentTarget as HTMLInputElement).value.trim();
     clearTimeout(t);
@@ -93,7 +93,7 @@
     goto(buildUrl({ method: v || null }), { replaceState: true });
   }
 
-  // PAGINATION
+  //PAGINATION
   function goPage(p: number) {
     if (p < 1 || p > data.totalPages) return;
     goto(buildUrl({}, p));

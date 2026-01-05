@@ -2,9 +2,9 @@
   import { page } from '$app/stores';
 
   $: path = $page.url.pathname;
-  $: user = $page.data.user; // từ admin layout.server.ts
-  $: role = $page.data.role; // từ admin layout.server.ts
-  $: profile = $page.data.profile; // từ admin layout.server.ts
+  $: user = $page.data.user; //từ admin layout.server.ts
+  $: role = $page.data.role; //từ admin layout.server.ts
+  $: profile = $page.data.profile; //từ admin layout.server.ts
 
   const nav = [
     { href: '/admin', icon: 'dashboard', label: 'Tổng quan' },

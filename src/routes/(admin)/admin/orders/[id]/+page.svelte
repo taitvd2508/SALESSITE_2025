@@ -36,8 +36,8 @@
     });
 
   function printInvoice() {
-    // _blank: Mở tab / cửa sổ mới, _self: Mở trong tab hiện tại (mặc định)
-    window.open(`/admin/orders/${data.order.id}/invoice`, '_blank'); // nếu muốn download thì thêm ?download=1, ko auto print thì ?print=0
+    //_blank: Mở tab / cửa sổ mới, _self: Mở trong tab hiện tại (mặc định)
+    window.open(`/admin/orders/${data.order.id}/invoice`, '_blank'); //nếu muốn download thì thêm ?download=1, ko auto print thì ?print=0
   }
 </script>
 

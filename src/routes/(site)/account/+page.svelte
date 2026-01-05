@@ -5,7 +5,7 @@
   const user = data.user;
   const profile = data.profile ?? {};
 
-  // short name for greeting
+  //short name for greeting
   const shortName = (name: string) => {
     const s = (name ?? "").trim();
     if (!s) return "bạn";
@@ -16,7 +16,7 @@
   $: displayName = profile.full_name ?? user?.email?.split("@")?.[0] ?? "bạn";
   $: email = profile.email ?? user?.email ?? "";
 
-  // Use string directly for native date input (YYYY-MM-DD)
+  //Use string directly for native date input (YYYY-MM-DD)
   let birthdayString = profile.birthday ?? "";
 </script>
 

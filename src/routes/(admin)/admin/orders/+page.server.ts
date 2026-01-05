@@ -1,12 +1,12 @@
-// src/routes/(admin)/admin/orders/+page.server.ts
+//src/routes/(admin)/admin/orders/+page.server.ts
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const q = (url.searchParams.get('q') ?? '').trim();
   const user = (url.searchParams.get('user') ?? '').trim();
 
-  const status = url.searchParams.get('status') ?? ''; // code: pending/paid/...
-  const method = url.searchParams.get('method') ?? ''; // code: cod/bank/momo
+  const status = url.searchParams.get('status') ?? ''; //code: pending/paid/...
+  const method = url.searchParams.get('method') ?? ''; //code: cod/bank/momo
 
   const fromStr = url.searchParams.get('from') ?? '';
   const toStr = url.searchParams.get('to') ?? '';
@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   const supabase = locals.supabase;
 
-  // facets (status/method)
+  //facets (status/method)
   const [{ data: statusRows }, { data: methodRows }] = await Promise.all([
     supabase.from('order_status').select('id, code, name').order('id'),
     supabase.from('order_method').select('id, code, name').order('id'),
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   let query = supabase
     .from('orders')
-    // embed status/method
+    //embed status/method
     .select(
       `
       id, created_at, full_name, phone, email, total_price,
@@ -38,14 +38,14 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     )
     .order('created_at', { ascending: false });
 
-  // search: id / name / phone / email
+  //search: id / name / phone / email
   if (q) {
     const qNum = Number(q);
     if (Number.isFinite(qNum)) {
       query = query.eq('id', qNum);
     } else {
-      // OR trên nhiều cột
-      // (postgrest uses: or('col.ilike.%x%,col2.ilike.%x%'))
+      //OR trên nhiều cột
+      //(postgrest uses: or('col.ilike.%x%,col2.ilike.%x%'))
       const like = `%${q}%`;
       query = query.or(
         `full_name.ilike.${like},phone.ilike.${like},email.ilike.${like}`
@@ -53,17 +53,17 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     }
   }
 
-  // filter userid
+  //filter userid
   if (user) query = query.eq('user_id', user);
 
-  // filter status/method by code
+  //filter status/method by code
   if (status && statusMap.has(status))
     query = query.eq('status_id', statusMap.get(status));
   if (method && methodMap.has(method))
     query = query.eq('method_id', methodMap.get(method));
 
-  // date range (created_at)
-  // from/to nên là YYYY-MM-DD
+  //date range (created_at)
+  //from/to nên là YYYY-MM-DD
   if (fromStr) query = query.gte('created_at', `${fromStr}T00:00:00`);
   if (toStr) query = query.lte('created_at', `${toStr}T23:59:59`);
 

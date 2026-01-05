@@ -1,4 +1,4 @@
-// src/routes/(admin)/admin/orders/[id]/+page.server.ts
+//src/routes/(admin)/admin/orders/[id]/+page.server.ts
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 
@@ -43,7 +43,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     };
   }
 
-  // order items (join product để show tên/ảnh)
+  //order items (join product để show tên/ảnh)
   const { data: items } = await supabase
     .from('order_details')
     .select(

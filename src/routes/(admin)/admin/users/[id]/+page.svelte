@@ -42,6 +42,7 @@
   // Re-sync khi chuyển giữa các user /admin/users/[id]
   $: if (data?.targetProfile?.id && seededForId !== data.targetProfile.id) {
     p = data.targetProfile;
+
     full_name = p?.full_name ?? '';
     email = p?.email ?? '';
     phone = p?.phone ?? '';

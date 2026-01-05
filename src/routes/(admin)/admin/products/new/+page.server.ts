@@ -8,7 +8,7 @@ function slugFolder(input: string) {
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // bỏ dấu
+      .replace(/[\u0300-\u036f]/g, '') //bỏ dấu
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'misc'
   );
@@ -34,7 +34,7 @@ export const actions: Actions = {
     const fd = await request.formData();
 
     const name = String(fd.get('name') ?? '').trim();
-    const slugInput = String(fd.get('slug') ?? '').trim(); // có thể trống
+    const slugInput = String(fd.get('slug') ?? '').trim(); //có thể trống
     const brand = String(fd.get('brand') ?? '').trim();
     const type = String(fd.get('type') ?? '').trim();
 
@@ -45,7 +45,7 @@ export const actions: Actions = {
     const quantity = Number(fd.get('quantity') ?? 0);
     const description = String(fd.get('description') ?? '').trim();
 
-    // URL images (JSON string)
+    //URL images (JSON string)
     const imagesRaw = String(fd.get('images') ?? '[]');
     let urlImages: string[] = [];
     try {
@@ -55,7 +55,7 @@ export const actions: Actions = {
       urlImages = [];
     }
 
-    // File images
+    //File images
     const files = fd
       .getAll('image_files')
       .filter((x) => x instanceof File && (x as File).size > 0) as File[];
@@ -67,10 +67,10 @@ export const actions: Actions = {
       return fail(400, { message: 'Giá bán không hợp lệ.' });
     }
 
-    // ✅ slug bắt buộc not null -> nếu trống, dùng name làm seed để trigger tự slugify
+    //slug bắt buộc not null -> nếu trống, dùng name làm seed để trigger tự slugify
     const slugSeed = slugInput || name;
 
-    // 1) Insert trước để lấy slug thật (do trigger set_product_slug quyết định)
+    //1) Insert trước để lấy slug thật (do trigger set_product_slug quyết định)
     const { data: created, error: insErr } = await locals.supabase
       .from('products')
       .insert({
@@ -94,10 +94,10 @@ export const actions: Actions = {
     const productId = created.id as number;
     const finalSlug = created.slug as string;
 
-    // 2) Upload file lên bucket (nếu có)
+    //2) Upload file lên bucket (nếu có)
     if (files.length > 0) {
-      const typeFolder = slugFolder(type); // laptop / ban-phim / tai-nghe /...
-      const brandFolder = slugFolder(brand); // acer / asus /...
+      const typeFolder = slugFolder(type); //laptop / ban-phim / tai-nghe /...
+      const brandFolder = slugFolder(brand); //acer / asus /...
       const uploadedUrls: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -105,7 +105,7 @@ export const actions: Actions = {
         const ext = extFromFile(f);
         const index = String(i + 1).padStart(2, '0');
 
-        // /products/<type>/<brand>/<slug>-01.jpg
+        ///products/<type>/<brand>/<slug>-01.jpg
         const path = `products/${typeFolder}/${brandFolder}/${finalSlug}-${index}.${ext}`;
 
         const { error: upErr } = await locals.supabase.storage
@@ -116,7 +116,7 @@ export const actions: Actions = {
           });
 
         if (upErr) {
-          // rollback: xóa product vừa tạo để tránh rác
+          //rollback: xóa product vừa tạo để tránh rác
           await locals.supabase.from('products').delete().eq('id', productId);
           return fail(500, { message: `Upload ảnh lỗi: ${upErr.message}` });
         }
@@ -127,7 +127,7 @@ export const actions: Actions = {
         if (pub?.publicUrl) uploadedUrls.push(pub.publicUrl);
       }
 
-      // 3) Update images[] = urlImages + uploadedUrls (unique)
+      //3) Update images[] = urlImages + uploadedUrls (unique)
       const merged = Array.from(
         new Set([...(urlImages ?? []), ...(uploadedUrls ?? [])])
       );
@@ -138,7 +138,7 @@ export const actions: Actions = {
         .eq('id', productId);
 
       if (up2Err) {
-        // không rollback nữa, vì upload đã ok; admin có thể sửa lại sau
+        //không rollback nữa, vì upload đã ok; admin có thể sửa lại sau
         return fail(500, { message: `Lưu images lỗi: ${up2Err.message}` });
       }
     }

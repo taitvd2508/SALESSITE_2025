@@ -1,4 +1,4 @@
-// src/lib/supabase/client.ts
+//src/lib/supabase/client.ts
 import { createBrowserClient } from '@supabase/ssr';
 import {
   PUBLIC_SUPABASE_URL,
@@ -10,7 +10,7 @@ export const supabase = createBrowserClient(
   PUBLIC_SUPABASE_ANON_KEY,
   {
     cookieOptions: {
-      secure: false, // localhost
+      secure: false, //localhost
     },
   }
 );

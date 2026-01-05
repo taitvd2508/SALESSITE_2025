@@ -19,19 +19,19 @@
     patch: Record<string, string | null | undefined>,
     nextPage?: number
   ) {
-    // clone URL hiện tại từ store (an toàn hơn window)
+    //clone URL hiện tại từ store (an toàn hơn window)
     const u = new URL($page.url);
 
-    // patch filter
+    //patch filter
     for (const [k, v] of Object.entries(patch)) {
       if (!v) u.searchParams.delete(k);
       else u.searchParams.set(k, v);
     }
 
-    // set page
+    //set page
     if (typeof nextPage === 'number')
       u.searchParams.set('page', String(nextPage));
-    else u.searchParams.delete('page'); // khi đổi filter thì reset về trang 1
+    else u.searchParams.delete('page'); //khi đổi filter thì reset về trang 1
 
     return u.pathname + '?' + u.searchParams.toString();
   }
@@ -49,7 +49,7 @@
     clearTimeout(t);
     t = setTimeout(() => {
       goto(buildUrl({ q: v || null }));
-    }, 300); // đổi filter => reset page
+    }, 300); //đổi filter => reset page
   }
 
   function onRoleChange(e: Event) {

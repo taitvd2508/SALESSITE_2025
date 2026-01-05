@@ -20,7 +20,7 @@
 
     try {
       console.log('BEFORE call reset');
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=/auth/set-password`;
       console.log('redirectTo =', redirectTo);
       const res = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo,

@@ -11,6 +11,6 @@ export const GET = async ({ url, locals: { supabase } }) => {
     }
   }
 
-  // Return the user to an error page with instructions
-  throw redirect(303, "/auth/error"); // Or back to login
+  //Return the user to an error page with instructions
+  throw redirect(303, "/auth/error"); //Or back to login
 };

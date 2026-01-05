@@ -25,7 +25,7 @@
       1
     );
 
-    // ghi event add_to_cart để trending tính điểm
+    //ghi event add_to_cart để trending tính điểm
     await fetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@
     facets: { types: string[]; brands: string[] };
   };
 
-  // local states (sync từ server) (UI)
+  //local states (sync từ server) (UI)
   let qInput = data.filters.q ?? '';
   let selectedType = data.filters.type ?? '';
   let selectedBrand = data.filters.brand ?? '';
@@ -73,8 +73,8 @@
   let max = data.filters.max || '1000000000';
   let sort = data.filters.sort || 'newest';
 
-  // ✅ Sync lại state khi URL/filter đổi -> server load trả về data.filters mới
-  // (nhưng không overwrite khi user đang gõ nếu qInput đã giống qUrl)
+  //Sync lại state khi URL/filter đổi -> server load trả về data.filters mới
+  //(nhưng không overwrite khi user đang gõ nếu qInput đã giống qUrl)
   $: {
     const qUrl = data.filters.q ?? '';
     if (qInput !== qUrl) qInput = qUrl;
@@ -113,7 +113,7 @@
   ) {
     const params = new URLSearchParams();
 
-    // ✅ q lấy từ overrides hoặc từ qInput (input state)
+    //q lấy từ overrides hoặc từ qInput (input state)
     const _q = overrides.q ?? qInput;
     const _type = overrides.type ?? selectedType;
     const _brand = overrides.brand ?? selectedBrand;
@@ -162,14 +162,14 @@
   }
 
   function buildPageNumbers(current: number, total: number) {
-    // hiển thị tối đa 5 trang
+    //hiển thị tối đa 5 trang
     const maxButtons = 5;
     const half = Math.floor(maxButtons / 2);
 
     let start = Math.max(1, current - half);
     let end = Math.min(total, start + maxButtons - 1);
 
-    // cân lại start nếu end chạm trần
+    //cân lại start nếu end chạm trần
     start = Math.max(1, end - maxButtons + 1);
 
     const arr: number[] = [];
