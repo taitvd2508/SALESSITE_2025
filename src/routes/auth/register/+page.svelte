@@ -534,7 +534,7 @@
             alt="Tech setup with neon lights"
             class="object-cover w-full h-full transition-opacity duration-700 opacity-60 hover:opacity-80 hover:scale-105"
             data-alt="Futuristic gaming setup with pink and blue neon lighting"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG6r2LhoClkEHN-dF6t8kkFxvHM6rVHyGIQ4xnzjwaOpv1pgns4PR8oufOOFZR_Be4iZBtyUb9vMa0npq4ioaQn2aNlMJJth8_59qMVWUJgQOQV9M5GA97a6AmILJb4TdkxvzL7t0eKXER9p3zDVm9ouL2MBLcvRaSi9qs51VXquLIJABkYeulNu-1MPMGuYeg2xwCdrNRyVdCoN5d14hEJwoEqU2RJTtID4Zrb4RwW4WLg1B_EbQW93ydNNnITCvlNzdTZhUN3Q"
+            src="https://elabcalarempslfrkwbx.supabase.co/storage/v1/object/public/products/user/register_page.png"
           />
           <div
             class="absolute inset-0 bg-gradient-to-t from-[#101622] to-transparent"
