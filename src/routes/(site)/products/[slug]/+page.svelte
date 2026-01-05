@@ -1,16 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { cart } from '$lib/stores/cart';
 
   export let data: any;
   let toast = '';
+  let toastType: 'success' | 'warning' = 'success';
+
+  //check if user is admin (admins cannot shop)
+  $: isAdmin = $page.data.role === 'admin';
   let toastTimer: any;
   const ATC_COOLDOWN_MS = 60_000; // 1P
 
-  function showToast(msg: string) {
+  function showToast(msg: string, type: 'success' | 'warning' = 'success') {
     toast = msg;
+    toastType = type;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (toast = ''), 1200);
+    toastTimer = setTimeout(() => (toast = ''), 2500);
   }
 
   let forYou: any[] = [];
@@ -103,6 +109,12 @@
 
   //add đúng sản phẩm đang xem
   async function addToCart() {
+    //block admin from shopping
+    if (isAdmin) {
+      showToast('Vui lòng sử dụng tài khoản khác để mua hàng', 'warning');
+      return;
+    }
+
     const p = data?.product;
     if (!p?.id) return;
 
@@ -137,6 +149,12 @@
 
   //add đúng sản phẩm card (forYou/trending/similar)
   async function addCardToCart(p: any) {
+    //block admin from shopping
+    if (isAdmin) {
+      showToast('Vui lòng sử dụng tài khoản khác để mua hàng', 'warning');
+      return;
+    }
+
     if (!p?.id) return;
 
     cart.add(toCartItem(p), 1);
@@ -626,8 +644,13 @@
   </div>
   {#if toast}
     <div
-      class="fixed top-3 right-24 z-[99999] bg-[#101622] border bg-primary/90 text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in"
+      class="fixed top-3 right-24 z-[99999] border text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in flex items-center gap-2"
+      class:bg-primary={toastType === 'success'}
+      class:bg-amber-600={toastType === 'warning'}
     >
+      {#if toastType === 'warning'}
+        <span class="text-lg material-symbols-outlined">warning</span>
+      {/if}
       {toast}
     </div>
   {/if}
