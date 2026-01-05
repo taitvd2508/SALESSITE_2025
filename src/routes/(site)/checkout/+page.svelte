@@ -32,8 +32,11 @@
     return x.image ?? '/images/placeholder-product.png';
   }
 
+  let newAccountMsg = '';
+
   async function submitOrder() {
     errorMsg = '';
+    newAccountMsg = '';
     if (!items.length) {
       errorMsg = 'Giỏ hàng trống.';
       return;
@@ -68,6 +71,13 @@
         throw new Error(out.error || 'Đặt Hàng Thất Bại!');
 
       cart.clear();
+      
+      //if new account was created, show notification and wait 5 seconds
+      if (out.newAccountCreated) {
+        newAccountMsg = 'Một email đã được gửi đến ' + email + ' để tạo tài khoản. Đang chuyển hướng...';
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+      
       await goto(`/checkout/success?order=${out.order_id}`);
     } catch (e: any) {
       errorMsg = e?.message ?? 'Có lỗi xảy ra';
@@ -408,6 +418,12 @@
             >Chính sách bảo mật</a
           > của TT STORE.
         </p>
+        {#if newAccountMsg}
+          <div class="mt-3 px-4 py-3 text-sm text-green-200 border rounded-xl border-green-500/40 bg-green-500/10 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] animate-pulse">mail</span>
+            {newAccountMsg}
+          </div>
+        {/if}
         {#if errorMsg}
           <p class="mt-3 text-sm text-red-400">{errorMsg}</p>
         {/if}

@@ -25,7 +25,14 @@
       return;
     }
 
-    if (!p?.id) return;
+    //check if adding 1 more would exceed available stock
+    const currentQty = $cart.items.find((x) => x.product_id === Number(p.id))?.quantity ?? 0;
+    const maxQty = p.quantity ?? 0;
+    
+    if (currentQty >= maxQty) {
+      showToast(`Đã đạt số lượng giới hạn: ${maxQty}`, 'warning');
+      return;
+    }
 
     cart.add(
       {

@@ -248,5 +248,73 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: evErr.message }, { status: 500 });
   }
 
-  return json({ ok: true, order_id: order.id, user_id: user_id ?? null });
+  //7) Guest: tạo user + update profile (không phụ thuộc email gửi được)
+  let newAccountCreated = false;
+  
+  if (!user_id) {
+    const redirectTo = `${event.url.origin}/auth/callback`;
+
+    try {
+      //A) tìm user theo email trước (đỡ tạo trùng)
+      let targetUserId: string | null = null;
+
+      const { data: usersRes, error: listErr } =
+        await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (!listErr) {
+        const u = usersRes.users.find(
+          (x) => (x.email ?? '').toLowerCase() === email.toLowerCase()
+        );
+        targetUserId = u?.id ?? null;
+      }
+
+      //B) nếu chưa có user: thử invite (gửi mail)
+      if (!targetUserId) {
+        const { data: inv, error: invErr } =
+          await admin.auth.admin.inviteUserByEmail(email, {
+            redirectTo,
+            data: { full_name, role: 'customer' },
+          });
+
+        if (invErr) {
+          console.log('INVITE ERROR message:', invErr.message);
+          console.log('INVITE ERROR name:', (invErr as any).name);
+          console.log('INVITE ERROR status:', (invErr as any).status);
+          console.log('INVITE ERROR full:', JSON.stringify(invErr, null, 2));
+
+          //C) fallback: createUser để chắc chắn có auth.users => trigger tạo profiles/user_roles
+          const { data: created, error: createErr } =
+            await admin.auth.admin.createUser({
+              email,
+              email_confirm: true,
+              user_metadata: { full_name, role: 'customer' },
+            });
+
+          if (createErr) {
+            console.log('createUser error:', createErr.message);
+          } else {
+            targetUserId = created.user?.id ?? null;
+            newAccountCreated = true; //new account created via createUser
+          }
+        } else {
+          targetUserId = inv.user?.id ?? null;
+          newAccountCreated = true; //new account created via invite
+        }
+      }
+
+      //D) update profile từ dữ liệu checkout (nếu bạn đã thêm profiles.email thì càng chuẩn)
+      if (targetUserId) {
+        const { error: upErr } = await admin
+          .from('profiles')
+          .update({ full_name, phone, address, email })
+          .eq('id', targetUserId);
+
+        if (upErr) console.log('update profile error:', upErr.message);
+      }
+    } catch (e) {
+      console.log('guest account flow error:', e);
+      //không chặn checkout
+    }
+  }
+
+  return json({ ok: true, order_id: order.id, newAccountCreated });
 };

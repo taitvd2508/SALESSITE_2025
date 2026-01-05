@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
-  import { cart, cartTotals } from '$lib/stores/cart';
+  import { cart, cartTotals, saveCartToServer, clearLocalCart } from '$lib/stores/cart';
   import { supabase } from '$lib/supabase/client'; //bạn phải có file này
 
   let q = '';
@@ -246,6 +246,12 @@
   }
 
   async function logout() {
+    //save cart to server before logout
+    await saveCartToServer();
+    
+    //clear localStorage cart
+    clearLocalCart();
+    
     await supabase.auth.signOut();
 
     //ép SvelteKit reload lại +layout.server.ts => user/profile = null
@@ -256,7 +262,41 @@
   }
 
   $: count = cartTotals($cart.items).count;
+
+  //cart merge toast notification (from sessionStorage after login)
+  let cartMergeToast = '';
+  
+  import { onMount } from 'svelte';
+  
+  onMount(() => {
+    const msg = sessionStorage.getItem('cart_merge_notification');
+    if (msg) {
+      cartMergeToast = msg;
+      sessionStorage.removeItem('cart_merge_notification');
+      //auto-dismiss after 3 seconds
+      setTimeout(() => {
+        cartMergeToast = '';
+      }, 3000);
+    }
+  });
 </script>
+
+<!-- Cart merge toast notification -->
+{#if cartMergeToast}
+  <div
+    class="fixed top-4 right-4 z-[100000] px-4 py-3 text-sm text-white border rounded-xl border-green-500/40 bg-green-600 shadow-xl flex items-center gap-2 animate-fade-in"
+  >
+    <span class="material-symbols-outlined text-[18px]">shopping_cart</span>
+    {cartMergeToast}
+    <button
+      type="button"
+      class="ml-2 opacity-70 hover:opacity-100"
+      on:click={() => cartMergeToast = ''}
+    >
+      <span class="material-symbols-outlined text-[16px]">close</span>
+    </button>
+  </div>
+{/if}
 
 <header
   class="w-full border-b border-[#232f48] bg-background-dark/95 backdrop-blur-md"
@@ -335,7 +375,7 @@
         {:else}
           <a
             aria-label="Tài khoản / Đăng nhập"
-            href="/auth/login"
+            href="/auth/login?next={encodeURIComponent(pathname)}"
             class="flex size-10 items-center justify-center rounded-lg bg-[#232f48] hover:bg-primary transition-colors text-white"
           >
             <span class="material-symbols-outlined">account_circle</span>
@@ -734,7 +774,7 @@
         {:else}
           <a
             aria-label="Tài khoản / Đăng nhập"
-            href="/auth/login"
+            href="/auth/login?next={encodeURIComponent(pathname)}"
             class="flex size-10 items-center justify-center rounded-lg bg-[#232f48] hover:bg-primary transition-colors text-white shrink-0"
           >
             <span class="material-symbols-outlined">account_circle</span>
