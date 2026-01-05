@@ -97,7 +97,13 @@ function createCart() {
       const state = get({ subscribe });
       const item = state.items.find((x) => x.product_id === product_id);
       if (!item) return;
-      this.setQty(product_id, item.quantity - 1);
+      
+      //remove item if quantity would become 0 or less
+      if (item.quantity <= 1) {
+        this.remove(product_id);
+      } else {
+        this.setQty(product_id, item.quantity - 1);
+      }
     }
   };
 }

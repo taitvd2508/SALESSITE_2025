@@ -20,6 +20,7 @@
 
   //derived
   $: product = data?.product;
+  $: productId = product ? Number(product.id) : null;
   $: title = product?.name ?? '';
   $: desc = product?.description ?? '';
   $: price = product?.price ?? 0;
@@ -29,6 +30,25 @@
   $: images = product?.images ?? [];
   $: cover =
     images?.[selectedIndex] ?? images?.[0] ?? '/images/placeholder-product.png';
+
+  //cart quantity sync - read the current quantity of this product in cart
+  $: cartQty = $cart.items.find((x) => x.product_id === productId)?.quantity ?? 0;
+  $: maxQty = product?.quantity ?? 1;
+
+  function incCartQty() {
+    if (!productId) return;
+    if (cartQty === 0) {
+      //first add
+      addToCart();
+    } else if (cartQty < maxQty) {
+      cart.inc(productId);
+    }
+  }
+
+  function decCartQty() {
+    if (!productId || cartQty <= 0) return;
+    cart.dec(productId);
+  }
 
   function vnd(n: number) {
     return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
@@ -92,7 +112,10 @@
     const p = data?.product;
     if (!p) return;
 
-    cart.add(toCartItem(p), 1);
+    //only add if not already in cart (quantity controls handle incrementing)
+    if (cartQty === 0) {
+      cart.add(toCartItem(p), 1);
+    }
 
     await fetch('/api/events', {
       method: 'POST',
@@ -103,7 +126,7 @@
       }),
     });
 
-    showToast('Đã thêm vào giỏ');
+    showToast(cartQty === 0 ? 'Đã thêm vào giỏ' : 'Cập nhật giỏ hànhg thành công');
   }
 
   //add đúng sản phẩm card (forYou/trending/similar)
@@ -328,7 +351,10 @@
               class="flex items-center rounded-lg bg-surface-dark border border-[#232f48] h-12 w-32"
             >
               <button
-                class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-l-lg"
+                type="button"
+                class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-l-lg disabled:opacity-40"
+                on:click={decCartQty}
+                disabled={cartQty <= 0}
               >
                 <span class="text-sm material-symbols-outlined">remove</span>
               </button>
@@ -336,10 +362,13 @@
                 class="w-full h-full font-bold text-center text-white bg-transparent border-none focus:ring-0"
                 readonly
                 type="text"
-                value="1"
+                value={cartQty}
               />
               <button
-                class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-r-lg"
+                type="button"
+                class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-r-lg disabled:opacity-40"
+                on:click={incCartQty}
+                disabled={cartQty >= maxQty}
               >
                 <span class="text-sm material-symbols-outlined">add</span>
               </button>
