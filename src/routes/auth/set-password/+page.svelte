@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { createClient } from '@supabase/supabase-js';
+  import { invalidateAll } from '$app/navigation';
   import {
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
@@ -17,9 +18,11 @@
   let okMsg = '';
 
   onMount(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // const {
+    //   data: { user },
+    // } = await supabase.auth.getUser();
+    const { data: sess } = await supabase.auth.getSession();
+    const user = sess.session?.user ?? null;
     if (!user) {
       await goto('/auth/login');
     }
@@ -43,7 +46,21 @@
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
+      // Link orders/user_events guest -> user (không chặn nếu lỗi)
+      try {
+        await fetch('/api/link-session', {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch (e) {
+        console.warn('link-session failed (non-blocking)', e);
+      }
+
       okMsg = 'Đặt mật khẩu thành công!';
+
+      // reload SSR theo cookie mới để header/layout nhận user
+      await invalidateAll();
+
       //về account hoặc trang chủ
       await goto('/account');
     } catch (e: any) {

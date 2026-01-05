@@ -1,44 +1,55 @@
 <script lang="ts">
-  import { supabase } from "$lib/supabase/client";
-  import { goto } from "$app/navigation";
-  import { invalidateAll } from "$app/navigation";
+  import { supabase } from '$lib/supabase/client';
+  import { goto } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
 
-  let email = "";
-  let password = "";
+  let email = '';
+  let password = '';
   let showPass = false;
 
   let loading = false;
-  let errorMsg = "";
+  let errorMsg = '';
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMsg = "";
+    errorMsg = '';
     loading = true;
 
     try {
-      console.log("submit login");
+      console.log('submit login');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error || !data.session) {
         const AUTH_ERROR_MAP: Record<string, string> = {
-          "Invalid login credentials": "Email hoặc mật khẩu không đúng",
-          "Email not confirmed": "Email chưa được xác nhận",
+          'Invalid login credentials': 'Email hoặc mật khẩu không đúng',
+          'Email not confirmed': 'Email chưa được xác nhận',
         };
         errorMsg = error
-          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại") //nếu có error thì
-          : "Không tạo được phiên đăng nhập"; //còn ko thì
+          ? (AUTH_ERROR_MAP[error.message] ?? 'Đăng nhập thất bại') //nếu có error thì
+          : 'Không tạo được phiên đăng nhập'; //còn ko thì
         return;
+      }
+
+      // LINK guest session -> user. Ví dụ khi login thành công, nếu còn trong trình duyệt với session cũ thì sẽ tự map seesion với userId để update vào user_events
+      try {
+        await fetch('/api/link-session', {
+          method: 'POST',
+          credentials: 'include', // gửi cookie
+        });
+      } catch (e) {
+        console.warn('link-session failed (non-blocking)', e);
+        // KHÔNG chặn login
       }
 
       //redirect sau khi login success
       const next =
-        new URLSearchParams(window.location.search).get("next") ?? "/account";
+        new URLSearchParams(window.location.search).get('next') ?? '/account';
       await invalidateAll(); //SSR reload theo cookie mới //để header/layout refresh ngay.
       await goto(next);
     } catch (err: any) {
-      errorMsg = err?.message ?? "Đăng nhập thất bại";
+      errorMsg = err?.message ?? 'Đăng nhập thất bại';
     } finally {
       loading = false;
     }
@@ -175,7 +186,7 @@
                 on:click={() => (showPass = !showPass)}
               >
                 <span class="material-symbols-outlined text-[20px]"
-                  >{showPass ? "visibility_off" : "visibility"}</span
+                  >{showPass ? 'visibility_off' : 'visibility'}</span
                 >
               </button>
             </div>
@@ -195,7 +206,7 @@
             type="submit"
             disabled={loading}
           >
-            <span>{loading ? "Đang đăng nhập..." : "Đăng nhập"}</span>
+            <span>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
             <span class="text-sm material-symbols-outlined">login</span>
           </button>
         </form>
