@@ -5,6 +5,7 @@
 
   let toast = '';
   let toastTimer: any;
+  const ATC_COOLDOWN_MS = 60_000; // 1P
 
   function showToast(msg: string) {
     toast = msg;
@@ -13,6 +14,8 @@
   }
 
   async function addProductToCart(p: any) {
+    if (!p?.id) return;
+
     cart.add(
       {
         product_id: Number(p.id),
@@ -25,15 +28,29 @@
       1
     );
 
-    //ghi event add_to_cart để trending tính điểm
-    await fetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_type: 'add_to_cart',
-        product_id: Number(p.id),
-      }),
-    });
+    const pid = Number(p.id);
+    const key = `atc_${pid}`;
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(key) ?? '0');
+
+    const shouldSend = now - last >= ATC_COOLDOWN_MS;
+
+    if (shouldSend) {
+      sessionStorage.setItem(key, String(now));
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            event_type: 'add_to_cart',
+            product_id: pid,
+          }),
+        });
+      } catch (e) {
+        console.warn('trackAddToCart failed', e);
+      }
+    }
 
     showToast('Đã thêm vào giỏ');
   }

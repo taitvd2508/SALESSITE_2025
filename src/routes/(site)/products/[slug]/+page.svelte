@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { cart } from '$lib/stores/cart';
+
   export let data: any;
   let toast = '';
   let toastTimer: any;
+  const ATC_COOLDOWN_MS = 60_000; // 1P
 
   function showToast(msg: string) {
     toast = msg;
@@ -53,21 +55,33 @@
 
   onMount(async () => {
     const productId = data?.product?.id;
+    // Không có productId thì: không track events (view, add_to_cart, recommendation,...)
     if (!productId) return;
 
-    //(A) track view_product (chặn spam)
-    const key = `viewed_${productId}`;
-    if (!sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, '1');
+    // (A) Tracking tránh spam view hoặc addtocard gì gì đó.
+    const pid = Number(productId);
+    const key = `viewed_${pid}`; // tạo key
+    const now = Date.now(); // lấy thời điểm hiện tại
+    const last = Number(sessionStorage.getItem(key) ?? '0'); // lấy thời điểm lần cuối đã gửi event
 
-      await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_type: 'view_product',
-          product_id: productId,
-        }),
-      });
+    const shouldSend = now - last >= ATC_COOLDOWN_MS; // Đã đủ thời gian cooldown chưa
+
+    // nếu đã đủ thời gian == true
+    if (shouldSend) {
+      sessionStorage.setItem(key, String(now)); // lưu key với timestamp dưới dạng chuỗi
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // Bắt trình duyệt gửi cookie kèm request
+          body: JSON.stringify({
+            event_type: 'view_product',
+            product_id: productId,
+          }),
+        });
+      } catch (e) {
+        console.warn('trackViewProduct failed', e);
+      }
     }
 
     //(B) for you
@@ -90,18 +104,33 @@
   //add đúng sản phẩm đang xem
   async function addToCart() {
     const p = data?.product;
-    if (!p) return;
+    if (!p?.id) return;
 
     cart.add(toCartItem(p), 1);
 
-    await fetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_type: 'add_to_cart',
-        product_id: Number(p.id),
-      }),
-    });
+    const pid = Number(p.id);
+    const key = `atc_${pid}`;
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(key) ?? '0');
+
+    const shouldSend = now - last >= ATC_COOLDOWN_MS;
+
+    if (shouldSend) {
+      sessionStorage.setItem(key, String(now));
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            event_type: 'add_to_cart',
+            product_id: pid,
+          }),
+        });
+      } catch (e) {
+        console.warn('trackAddToCart failed', e);
+      }
+    }
 
     showToast('Đã thêm vào giỏ');
   }
@@ -112,14 +141,29 @@
 
     cart.add(toCartItem(p), 1);
 
-    await fetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_type: 'add_to_cart',
-        product_id: Number(p.id),
-      }),
-    });
+    const pid = Number(p.id);
+    const key = `atc_${pid}`;
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem(key) ?? '0');
+
+    const shouldSend = now - last >= ATC_COOLDOWN_MS;
+
+    if (shouldSend) {
+      sessionStorage.setItem(key, String(now));
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            event_type: 'add_to_cart',
+            product_id: pid,
+          }),
+        });
+      } catch (e) {
+        console.warn('trackAddToCart failed', e);
+      }
+    }
 
     showToast('Đã thêm vào giỏ');
   }
