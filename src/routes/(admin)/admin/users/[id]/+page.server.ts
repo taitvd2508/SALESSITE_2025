@@ -32,7 +32,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   const id = params.id;
 
-  const { data: profile, error } = await locals.supabase
+  const { data: targetProfile, error } = await locals.supabase
     .from('profiles')
     .select(
       'id, full_name, phone, address, email, birthday, gender, is_active, created_at, updated_at'
@@ -40,10 +40,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     .eq('id', id)
     .single();
 
-  if (error || !profile) {
+  if (error || !targetProfile) {
     return {
-      profile: null,
-      role: 'customer',
+      targetProfile: null,
+      targetRole: 'customer' as Role,
       orders: [],
       stats: { count: 0, total: 0 },
     };
@@ -55,7 +55,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     .eq('user_id', id)
     .single();
 
-  const role = (roleRow?.role ?? 'customer') as Role;
+  // role của user đang xem chi tiết
+  const targetRole = (roleRow?.role ?? 'customer') as Role;
 
   const { data: orders } = await locals.supabase
     .from('orders')
@@ -70,11 +71,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     0
   );
 
-  return { profile, role, orders: orders ?? [], stats: { count, total } };
+  return {
+    targetProfile,
+    targetRole,
+    orders: orders ?? [],
+    stats: { count, total },
+  };
 };
 
 export const actions: Actions = {
-  save: async ({ request, locals, params }) => {
+  update: async ({ request, locals, params }) => {
     await requireAdmin(locals);
 
     const id = params.id;

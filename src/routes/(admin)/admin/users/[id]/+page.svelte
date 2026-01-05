@@ -3,6 +3,11 @@
   import { invalidateAll } from '$app/navigation';
 
   export let data: any;
+  export let form: any;
+
+  // role của người đang đăng nhập (admin/staff)
+  const viewerRole = data?.role ?? 'customer'; // lấy từ layout admin
+  $: canEdit = viewerRole === 'admin';
 
   const formatDateTime = (iso: string) => {
     try {
@@ -21,17 +26,8 @@
   const formatVND = (n: any) =>
     new Intl.NumberFormat('vi-VN').format(Number(n ?? 0)) + ' đ';
 
-  let toast = '';
-  let toastTimer: any;
-
-  function showToast(msg: string) {
-    toast = msg;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (toast = ''), 1600);
-  }
-
-  // form fields (bind from server data)
-  let p = data?.profile;
+  // USER ĐANG XEM (target)
+  let p = data?.targetProfile;
 
   let full_name = p?.full_name ?? '';
   let email = p?.email ?? '';
@@ -39,48 +35,41 @@
   let address = p?.address ?? '';
   let birthday = p?.birthday ?? ''; // yyyy-mm-dd
   let gender = p?.gender ?? ''; // enum value
-  let role = data?.role ?? 'customer';
+  let targetRole = data?.targetRole ?? 'customer';
 
-  // Re-sync when navigating between users without full reload
-  $: if (data?.profile) {
-    p = data.profile;
+  let seededForId: string | null = null;
+
+  // Re-sync khi chuyển giữa các user /admin/users/[id]
+  $: if (data?.targetProfile?.id && seededForId !== data.targetProfile.id) {
+    p = data.targetProfile;
     full_name = p?.full_name ?? '';
     email = p?.email ?? '';
     phone = p?.phone ?? '';
     address = p?.address ?? '';
     birthday = p?.birthday ?? '';
     gender = p?.gender ?? '';
-    role = data?.role ?? 'customer';
+    targetRole = data?.targetRole ?? 'customer';
+
+    seededForId = data.targetProfile.id;
   }
 
-  const enhanceSave = (node: HTMLFormElement) =>
+  const enhanceUpdate = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ result, update }) => {
-        await update(); // cập nhật form state (nếu bạn return message)
+        // applyAction để cập nhật form.message / form errors
         await applyAction(result);
-        await invalidateAll(); // reload load()
-
-        // show toast if action success
-        const r: any = result;
-        if (r?.type === 'success') {
-          showToast(r?.data?.message ?? 'Đã lưu thay đổi.');
-        } else if (r?.type === 'failure') {
-          showToast(r?.data?.message ?? 'Lỗi lưu dữ liệu.');
-        }
+        // Không reset form + không invalidateAll (reload load())
+        await update({ reset: false, invalidateAll: false });
       };
     });
 
   const enhanceToggle = (node: HTMLFormElement) =>
     enhance(node, () => {
       return async ({ result, update }) => {
-        await update();
+        // applyAction để cập nhật form.message / form errors
         await applyAction(result);
-        await invalidateAll();
-
-        const r: any = result;
-        if (r?.type === 'success') showToast(r?.data?.message ?? 'OK');
-        else if (r?.type === 'failure')
-          showToast(r?.data?.message ?? 'Lỗi thao tác.');
+        // Không reset form + invalidateAll (reload load())
+        await update({ reset: false, invalidateAll: true });
       };
     });
 </script>
@@ -88,16 +77,6 @@
 <svelte:head>
   <title>Admin - Chi tiết người dùng</title>
 </svelte:head>
-
-{#if toast}
-  <div class="fixed top-4 right-4 z-[9999]">
-    <div
-      class="px-4 py-3 text-sm font-bold text-white shadow-lg rounded-xl bg-primary/90 shadow-blue-900/30"
-    >
-      {toast}
-    </div>
-  </div>
-{/if}
 
 <div
   class="flex-1 p-4 overflow-y-auto bg-background-light dark:bg-background-dark md:p-8"
@@ -115,7 +94,7 @@
         <span class="text-sm font-medium">Quay lại danh sách</span>
       </a>
 
-      {#if !data?.profile}
+      {#if !data?.targetProfile}
         <div
           class="p-6 text-red-200 border border-red-500/30 bg-red-500/10 rounded-xl"
         >
@@ -127,7 +106,7 @@
         >
           <div>
             <h1 class="mb-2 text-3xl font-bold tracking-tight text-white">
-              {data.profile.full_name ?? '—'}
+              {data.targetProfile.full_name ?? '—'}
             </h1>
 
             <div
@@ -135,17 +114,17 @@
             >
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px]">mail</span>
-                {data.profile.email ?? '—'}
+                {data.targetProfile.email ?? '—'}
               </span>
 
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px]">call</span>
-                {data.profile.phone ?? '—'}
+                {data.targetProfile.phone ?? '—'}
               </span>
 
               <span class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[16px]">badge</span>
-                Role: <b class="text-white">{data.role}</b>
+                Role: <b class="text-white">{targetRole}</b>
               </span>
             </div>
           </div>
@@ -153,7 +132,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <a
               class="flex items-center gap-2 px-4 text-white transition-colors border h-11 rounded-xl border-surface-highlight hover:bg-surface-highlight"
-              href={`/admin/orders?user=${encodeURIComponent(data.profile.id)}`}
+              href={`/admin/orders?user=${encodeURIComponent(data.targetProfile.id)}`}
               title="Xem toàn bộ đơn hàng của user"
             >
               <span class="material-symbols-outlined text-[20px]"
@@ -167,24 +146,44 @@
               <input
                 type="hidden"
                 name="active"
-                value={data.profile.is_active ? 'false' : 'true'}
+                value={data.targetProfile.is_active ? 'false' : 'true'}
               />
               <button
                 type="submit"
                 class="flex items-center gap-2 px-4 text-white transition-colors shadow-lg h-11 rounded-xl bg-primary hover:bg-blue-600 shadow-blue-900/20"
+                disabled={!canEdit}
               >
                 <span class="material-symbols-outlined text-[20px]">
-                  {data.profile.is_active ? 'block' : 'verified_user'}
+                  {data.targetProfile.is_active ? 'block' : 'verified_user'}
                 </span>
-                {data.profile.is_active ? 'Khoá tài khoản' : 'Mở khoá'}
+                {data.targetProfile.is_active ? 'Khoá tài khoản' : 'Mở khoá'}
               </button>
             </form>
           </div>
         </div>
+        {#if form?.message}
+          <div
+            class={`px-4 py-3 text-sm border rounded-xl ${
+              form.ok
+                ? 'text-emerald-200 border-emerald-500/40 bg-emerald-500/10'
+                : 'text-red-200 border-red-500/40 bg-red-500/10'
+            }`}
+          >
+            {form.message}
+          </div>
+        {/if}
+        {#if !canEdit}
+          <div
+            class="px-4 py-3 text-sm text-yellow-200 border rounded-xl border-yellow-500/40 bg-yellow-500/10"
+          >
+            Bạn đang đăng nhập role <b>{viewerRole}</b>. Chỉ <b>admin</b> mới được
+            chỉnh sửa user.
+          </div>
+        {/if}
       {/if}
     </div>
 
-    {#if data?.profile}
+    {#if data?.targetProfile}
       <!-- Stats -->
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div
@@ -209,7 +208,7 @@
           class="p-5 border rounded-xl border-surface-highlight bg-surface-dark"
         >
           <div class="text-sm text-text-secondary">Trạng thái</div>
-          {#if data.profile.is_active}
+          {#if data.targetProfile.is_active}
             <div
               class="inline-flex items-center gap-2 px-3 py-1 mt-2 text-sm font-bold border rounded-full border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
             >
@@ -234,14 +233,14 @@
         <div class="flex items-center justify-between gap-3 mb-5">
           <div class="text-lg font-bold text-white">Thông tin người dùng</div>
           <div class="text-xs text-text-secondary">
-            Tạo lúc: {formatDateTime(data.profile.created_at)}
+            Tạo lúc: {formatDateTime(data.targetProfile.created_at)}
           </div>
         </div>
 
         <form
           method="POST"
-          action="?/save"
-          use:enhanceSave
+          action="?/update"
+          use:enhanceUpdate
           class="grid grid-cols-1 gap-4 md:grid-cols-12"
         >
           <div class="md:col-span-6 flex flex-col gap-1.5">
@@ -252,6 +251,7 @@
               name="full_name"
               class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
               bind:value={full_name}
+              disabled={!canEdit}
               placeholder="Nguyễn Văn A"
             />
           </div>
@@ -328,7 +328,8 @@
             <select
               name="role"
               class="w-full bg-[#101622] border border-surface-highlight text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-              bind:value={role}
+              bind:value={targetRole}
+              disabled={!canEdit}
             >
               <option value="customer">customer</option>
               <option value="staff">staff</option>
@@ -343,6 +344,7 @@
             <button
               type="submit"
               class="px-5 font-bold text-white transition-colors shadow-lg h-11 rounded-xl bg-primary hover:bg-blue-600 shadow-blue-900/20"
+              disabled={!canEdit}
             >
               Lưu thay đổi
             </button>
@@ -358,7 +360,7 @@
           <div class="text-lg font-bold text-white">10 đơn gần nhất</div>
           <a
             class="text-sm font-bold transition-colors text-primary hover:text-primary/80"
-            href={`/admin/orders?user=${encodeURIComponent(data.profile.id)}`}
+            href={`/admin/orders?user=${encodeURIComponent(data.targetProfile.id)}`}
           >
             Xem tất cả →
           </a>
