@@ -1,25 +1,13 @@
 import { json } from '@sveltejs/kit';
-import { createClient } from '@supabase/supabase-js';
-import type { RequestEvent } from '@sveltejs/kit';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import type { RequestHandler } from './$types';
 
-const supabase = createClient(
-  PUBLIC_SUPABASE_URL,
-  PUBLIC_SUPABASE_ANON_KEY
-);
-
-export async function POST(event: RequestEvent) {
-  const { request, cookies } = event;
-
+export const POST: RequestHandler = async ({ request, cookies, locals }) => {
   const sid = cookies.get('tt_sid');
-  if (!sid) {
-    return json({ ok: false, error: 'Missing session_id cookie' }, { status: 400 });
-  }
+  if (!sid)
+    return json({ ok: false, error: 'Missing tt_sid cookie' }, { status: 400 });
 
   const body = await request.json().catch(() => null);
-  if (!body) {
-    return json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
-  }
+  if (!body) return json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
 
   const { event_type, product_id, order_id, quantity, meta } = body;
 
@@ -28,21 +16,24 @@ export async function POST(event: RequestEvent) {
     return json({ ok: false, error: 'Invalid event_type' }, { status: 400 });
   }
 
-  const { error } = await supabase.from('user_events').insert({
+  // Lấy user đăng nhập (nếu có)
+  const { user } = await locals.getSession(); // user có thể null
+
+  // Dùng locals.supabase để request mang auth context
+  const { error } = await locals.supabase.from('user_events').insert({
     session_id: sid,
+    user_id: user?.id ?? null,
     event_type,
     product_id: product_id ?? null,
     order_id: order_id ?? null,
     quantity: quantity ?? null,
-    meta: meta ?? {}
+    meta: meta ?? {},
   });
 
-  if (error) {
-    return json({ ok: false, error: error.message }, { status: 500 });
-  }
+  if (error) return json({ ok: false, error: error.message }, { status: 500 });
 
-  return json({ ok: true });
-}
+  return json({ ok: true, user_id: user?.id ?? null });
+};
 
 /* 
 Bước 3 = tạo 1 API nội bộ /api/events để ghi “hành vi người dùng” vào bảng user_events.
