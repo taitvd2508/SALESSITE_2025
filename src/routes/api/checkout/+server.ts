@@ -11,18 +11,23 @@ type PaymentCode = 'cod' | 'bank' | 'wallet';
 type CheckoutItem = {
   product_id: number;
   quantity: number;
-  price?: number; //client gửi cho vui, server không tin
+  price?: number; // client gửi cho vui, server không tin
 };
+
+function normEmail(s: string) {
+  return (s ?? '').trim().toLowerCase();
+}
 
 export const POST: RequestHandler = async (event) => {
   const { request, cookies, locals } = event;
 
   const sid = cookies.get('tt_sid');
-  if (!sid)
+  if (!sid) {
     return json(
       { ok: false, error: 'Missing session cookie' },
       { status: 400 }
     );
+  }
 
   const body = await request.json().catch(() => null);
   if (!body) return json({ ok: false, error: 'Invalid JSON' }, { status: 400 });
@@ -61,8 +66,17 @@ export const POST: RequestHandler = async (event) => {
     );
   }
 
-  //lấy user hiện tại (nếu đã login)
+  const emailNorm = normEmail(email);
+
+  // =========================================================
+  // CHANGE 1) Resolve user_id TRƯỚC khi tạo order
+  //   - ưu tiên user đang login
+  //   - nếu guest: tra profiles.email để lấy id (nếu đã tồn tại)
+  //   - nếu vẫn chưa có: tạo user (invite/createUser) để lấy id
+  // =========================================================
   let user_id: string | null = null;
+
+  // 1A) nếu đã login -> lấy user.id
   try {
     const { data } = await locals.supabase.auth.getUser();
     user_id = data.user?.id ?? null;
@@ -70,7 +84,60 @@ export const POST: RequestHandler = async (event) => {
     user_id = null;
   }
 
-  //1) Tính tổng tiền dựa trên DB
+  // 1B) nếu guest -> thử tìm profiles theo email (NHANH)
+  if (!user_id && emailNorm) {
+    const { data: prof, error: profErr } = await admin
+      .from('profiles')
+      .select('id')
+      .ilike('email', emailNorm)
+      .maybeSingle();
+
+    if (!profErr && prof?.id) user_id = prof.id;
+  }
+
+  // 1C) nếu vẫn chưa có -> tạo user trước để gán user_id vào order/events
+  if (!user_id && emailNorm) {
+    const redirectTo = `${event.url.origin}/auth/callback`;
+
+    try {
+      // Invite trước (có gửi email nếu SMTP OK)
+      const { data: inv, error: invErr } =
+        await admin.auth.admin.inviteUserByEmail(emailNorm, {
+          redirectTo,
+          data: { full_name, role: 'customer' },
+        });
+
+      if (!invErr) {
+        user_id = inv.user?.id ?? null;
+      } else {
+        // fallback: createUser (không phụ thuộc email gửi được)
+        const { data: created, error: createErr } =
+          await admin.auth.admin.createUser({
+            email: emailNorm,
+            email_confirm: true,
+            user_metadata: { full_name, role: 'customer' },
+          });
+
+        if (!createErr) user_id = created.user?.id ?? null;
+      }
+
+      // upsert/update profile để lần sau tra email ra id được
+      if (user_id) {
+        const { error: upErr } = await admin
+          .from('profiles')
+          .update({ full_name, phone, address, email: emailNorm })
+          .eq('id', user_id);
+
+        // không chặn checkout
+        if (upErr) console.log('update profile error:', upErr.message);
+      }
+    } catch (e) {
+      console.log('guest pre-create flow error:', e);
+      // không chặn checkout; user_id có thể vẫn null
+    }
+  }
+
+  // 2) Tính tổng tiền dựa trên DB
   const ids = items.map((x) => x.product_id);
   const { data: dbProducts, error: prodErr } = await admin
     .from('products')
@@ -87,21 +154,22 @@ export const POST: RequestHandler = async (event) => {
   let total_price = 0;
   for (const it of items) {
     const p = priceMap.get(it.product_id);
-    if (!p || !p.active)
+    if (!p || !p.active) {
       return json(
         { ok: false, error: 'Có sản phẩm không hợp lệ' },
         { status: 400 }
       );
-    if (it.quantity < 1)
+    }
+    if (it.quantity < 1) {
       return json(
         { ok: false, error: 'Số lượng không hợp lệ' },
         { status: 400 }
       );
-
+    }
     total_price += Number(p.price) * it.quantity;
   }
 
-  //2) method_id theo code
+  // 3) method_id theo code
   const { data: methodRow, error: methodErr } = await admin
     .from('order_method')
     .select('id')
@@ -112,7 +180,7 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: methodErr.message }, { status: 500 });
   const method_id = methodRow.id;
 
-  //3) status_id pending
+  // 4) status_id pending
   const { data: statusRow, error: statusErr } = await admin
     .from('order_status')
     .select('id')
@@ -123,14 +191,14 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: statusErr.message }, { status: 500 });
   const status_id = statusRow.id;
 
-  //4) tạo order
+  // CHANGE 2) tạo order với user_id (đã resolve ở trên)
   const { data: order, error: orderErr } = await admin
     .from('orders')
     .insert({
-      user_id,
+      user_id: user_id ?? null,
       full_name,
       phone,
-      email,
+      email: emailNorm || email, // lưu normalized
       address,
       note: note ?? null,
       status_id,
@@ -143,7 +211,7 @@ export const POST: RequestHandler = async (event) => {
   if (orderErr)
     return json({ ok: false, error: orderErr.message }, { status: 500 });
 
-  //5) order_details + rollback nếu lỗi
+  // 5) order_details + rollback nếu lỗi
   const details = items.map((it) => {
     const p = priceMap.get(it.product_id);
     return {
@@ -160,9 +228,10 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: detErr.message }, { status: 500 });
   }
 
-  //6) purchase events + rollback nếu lỗi
+  // CHANGE 3) purchase events có user_id luôn (nếu có)
   const purchaseEvents = items.map((it) => ({
     session_id: sid,
+    user_id: user_id ?? null,
     event_type: 'purchase',
     product_id: it.product_id,
     order_id: order.id,
@@ -179,69 +248,5 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: evErr.message }, { status: 500 });
   }
 
-  //7) Guest: tạo user + update profile (không phụ thuộc email gửi được)
-  if (!user_id) {
-    const redirectTo = `${event.url.origin}/auth/callback`;
-
-    try {
-      //A) tìm user theo email trước (đỡ tạo trùng)
-      let targetUserId: string | null = null;
-
-      const { data: usersRes, error: listErr } =
-        await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      if (!listErr) {
-        const u = usersRes.users.find(
-          (x) => (x.email ?? '').toLowerCase() === email.toLowerCase()
-        );
-        targetUserId = u?.id ?? null;
-      }
-
-      //B) nếu chưa có user: thử invite (gửi mail)
-      if (!targetUserId) {
-        const { data: inv, error: invErr } =
-          await admin.auth.admin.inviteUserByEmail(email, {
-            redirectTo,
-            data: { full_name, role: 'customer' },
-          });
-
-        if (invErr) {
-          console.log('INVITE ERROR message:', invErr.message);
-          console.log('INVITE ERROR name:', (invErr as any).name);
-          console.log('INVITE ERROR status:', (invErr as any).status);
-          console.log('INVITE ERROR full:', JSON.stringify(invErr, null, 2));
-
-          //C) fallback: createUser để chắc chắn có auth.users => trigger tạo profiles/user_roles
-          const { data: created, error: createErr } =
-            await admin.auth.admin.createUser({
-              email,
-              email_confirm: true,
-              user_metadata: { full_name, role: 'customer' },
-            });
-
-          if (createErr) {
-            console.log('createUser error:', createErr.message);
-          } else {
-            targetUserId = created.user?.id ?? null;
-          }
-        } else {
-          targetUserId = inv.user?.id ?? null;
-        }
-      }
-
-      //D) update profile từ dữ liệu checkout (nếu bạn đã thêm profiles.email thì càng chuẩn)
-      if (targetUserId) {
-        const { error: upErr } = await admin
-          .from('profiles')
-          .update({ full_name, phone, address, email })
-          .eq('id', targetUserId);
-
-        if (upErr) console.log('update profile error:', upErr.message);
-      }
-    } catch (e) {
-      console.log('guest account flow error:', e);
-      //không chặn checkout
-    }
-  }
-
-  return json({ ok: true, order_id: order.id });
+  return json({ ok: true, order_id: order.id, user_id: user_id ?? null });
 };
