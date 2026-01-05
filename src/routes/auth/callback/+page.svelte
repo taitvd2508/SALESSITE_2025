@@ -18,7 +18,7 @@
       console.log('[callback] search:', url.search);
       console.log('[callback] hash:', window.location.hash);
 
-      const nextRaw = url.searchParams.get('next') ?? '/set-password';
+      const nextRaw = url.searchParams.get('next') ?? '/auth/set-password';
       const next = nextRaw.startsWith('/') ? nextRaw : '/';
       console.log('[callback] next:', next);
 
