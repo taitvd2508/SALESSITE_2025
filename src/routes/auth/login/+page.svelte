@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { supabase } from '$lib/supabase/client';
-  import { goto } from '$app/navigation';
-  import { invalidateAll } from '$app/navigation';
+  import { supabase } from "$lib/supabase/client";
+  import { goto } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { cart, mergeCartFromServer } from "$lib/stores/cart";
+  import { get } from "svelte/store";
 
   let email = '';
   let password = '';
@@ -12,7 +14,14 @@
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMsg = '';
+    
+    //capture redirect target FIRST before any async operations
+    const next = new URLSearchParams(window.location.search).get("next") ?? "/account";
+    
+    //check if local cart has items BEFORE login (to show notification only if user had items)
+    const localCartHadItems = get(cart).items.length > 0;
+    
+    errorMsg = "";
     loading = true;
 
     try {
@@ -27,8 +36,8 @@
           'Email not confirmed': 'Email chưa được xác nhận',
         };
         errorMsg = error
-          ? (AUTH_ERROR_MAP[error.message] ?? 'Đăng nhập thất bại') //nếu có error thì
-          : 'Không tạo được phiên đăng nhập'; //còn ko thì
+          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại")
+          : "Không tạo được phiên đăng nhập";
         return;
       }
 
@@ -43,10 +52,14 @@
         // KHÔNG chặn login
       }
 
-      //redirect sau khi login success
-      const next =
-        new URLSearchParams(window.location.search).get('next') ?? '/account';
-      await invalidateAll(); //SSR reload theo cookie mới //để header/layout refresh ngay.
+      //merge cart from server - only show notification if local cart had items
+      const { merged, addedCount } = await mergeCartFromServer();
+      if (merged && addedCount > 0 && localCartHadItems) {
+        //store notification in sessionStorage to show on destination page
+        sessionStorage.setItem('cart_merge_notification', `Giỏ hàng đã được cập nhật (+${addedCount} sản phẩm)`);
+      }
+
+      await invalidateAll();
       await goto(next);
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đăng nhập thất bại';

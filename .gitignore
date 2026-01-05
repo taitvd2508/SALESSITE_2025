@@ -2,7 +2,7 @@
 node_modules/
 
 # env
-.env
+*.env
 .env.*
 
 # SvelteKit
@@ -29,13 +29,14 @@ pnpm-debug.log*
 .vite/
 coverage/
 
-# local database / seeds (nếu có)
+# local database
 *.sqlite
 *.sqlite3
 *.db
 
-# Supabase local (nếu bạn dùng supabase cli)
+# Supabase local (supabase cli)
 supabase/.temp/
 supabase/.branches/
 
+*.txt
 GEMINI.md

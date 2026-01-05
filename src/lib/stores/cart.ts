@@ -48,7 +48,7 @@ function createCart() {
 
   return {
     subscribe,
-
+    set,
     clear() {
       set({ items: [] });
       save({ items: [] });
@@ -110,6 +110,93 @@ function createCart() {
 
 export const cart = createCart();
 
+//save cart to server (for logout)
+export async function saveCartToServer(): Promise<boolean> {
+  if (!browser) return false;
+  const state = get(cart);
+  if (state.items.length === 0) return true;
+  
+  try {
+    const res = await fetch('/api/cart/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: state.items.map((x) => ({
+          product_id: x.product_id,
+          quantity: x.quantity,
+        })),
+      }),
+    });
+    const data = await res.json();
+    return data.ok === true;
+  } catch (e) {
+    console.error('saveCartToServer error:', e);
+    return false;
+  }
+}
+
+//load cart from server and merge with localStorage (for login)
+export async function mergeCartFromServer(): Promise<{ merged: boolean; addedCount: number }> {
+  if (!browser) return { merged: false, addedCount: 0 };
+  
+  try {
+    const res = await fetch('/api/cart/load');
+    const data = await res.json();
+    
+    if (!data.ok || !Array.isArray(data.items) || data.items.length === 0) {
+      return { merged: false, addedCount: 0 };
+    }
+    
+    const serverItems: CartItem[] = data.items;
+    const localState = get(cart);
+    const localItems = [...localState.items];
+    
+    let addedCount = 0;
+    
+    //merge: add server items to local cart
+    for (const serverItem of serverItems) {
+      const localIndex = localItems.findIndex((x) => x.product_id === serverItem.product_id);
+      if (localIndex >= 0) {
+        //product exists in local cart - add quantities
+        localItems[localIndex] = {
+          ...localItems[localIndex],
+          quantity: localItems[localIndex].quantity + serverItem.quantity,
+        };
+        addedCount += serverItem.quantity;
+      } else {
+        //product not in local cart - add it
+        localItems.push(serverItem);
+        addedCount += serverItem.quantity;
+      }
+    }
+    
+    if (addedCount > 0) {
+      const next = { items: localItems };
+      cart.set(next);
+      save(next);
+      
+      //clear server cart after merging
+      await fetch('/api/cart/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [] }),
+      });
+    }
+    
+    return { merged: true, addedCount };
+  } catch (e) {
+    console.error('mergeCartFromServer error:', e);
+    return { merged: false, addedCount: 0 };
+  }
+}
+
+//clear localStorage cart only (for logout)
+export function clearLocalCart() {
+  if (!browser) return;
+  cart.set({ items: [] });
+  save({ items: [] });
+}
+
 export function cartTotals(items: CartItem[]) {
   const subtotal = items.reduce((s, x) => s + x.price * x.quantity, 0);
   const count = items.reduce((s, x) => s + x.quantity, 0);
@@ -119,3 +206,4 @@ export function cartTotals(items: CartItem[]) {
 export function vnd(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
 }
+
