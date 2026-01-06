@@ -51,6 +51,7 @@
         .select('id, slug, name, brand, type, price, old_price, images, tags')
         .eq('active', true)
         .overlaps('tags', [tag])
+        .order('created_at', { ascending: false })
         .limit(limit + 1); // Fetch one extra in case we need to exclude current product
 
       const { data, error: fetchError } = await query;

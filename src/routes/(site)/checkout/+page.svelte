@@ -24,9 +24,14 @@
 
   let loading = false;
   let errorMsg = '';
+  
+  // Stock validation state
+  let stockErrors: Array<{ product_id: number; name: string; requested: number; available: number }> = [];
+  let validatingStock = true;
 
   $: items = $cart.items as CartItem[];
   $: totals = cartTotals(items);
+  $: hasStockError = stockErrors.length > 0;
 
   function coverOf(x: CartItem) {
     return x.image ?? '/images/placeholder-product.png';
@@ -34,9 +39,50 @@
 
   let newAccountMsg = '';
 
+  // Validate stock against database
+  async function validateStock() {
+    if (items.length === 0) {
+      stockErrors = [];
+      validatingStock = false;
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((x) => ({
+            product_id: x.product_id,
+            quantity: x.quantity,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (!data.ok && data.errors) {
+        stockErrors = data.errors;
+      } else {
+        stockErrors = [];
+      }
+    } catch (e) {
+      console.error('Stock validation failed:', e);
+      stockErrors = [];
+    } finally {
+      validatingStock = false;
+    }
+  }
+
   async function submitOrder() {
     errorMsg = '';
     newAccountMsg = '';
+    
+    if (hasStockError) {
+      errorMsg = 'Sản phẩm tạm thời hết hàng, mong quý khách thứ lỗi';
+      return;
+    }
+    
     if (!items.length) {
       errorMsg = 'Giỏ hàng trống.';
       return;
@@ -86,9 +132,15 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
     //nếu giỏ trống, đá về cart
-    if (!$cart.items.length) goto('/cart');
+    if (!$cart.items.length) {
+      goto('/cart');
+      return;
+    }
+    
+    // Validate stock on page load
+    await validateStock();
   });
 </script>
 
@@ -397,14 +449,33 @@
             </p>
           </div>
         </div>
+        <!-- Stock Validation Status -->
+        {#if validatingStock}
+          <div class="mb-4 text-center text-sm text-text-secondary flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+            Đang kiểm tra kho hàng...
+          </div>
+        {:else if hasStockError}
+          <div class="mb-4 px-4 py-3 text-sm text-amber-200 border rounded-xl border-amber-500/40 bg-amber-500/10 flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px] flex-shrink-0 mt-0.5">warning</span>
+            <div>
+              <p class="font-medium">Sản phẩm tạm thời hết hàng, mong quý khách thứ lỗi</p>
+              <ul class="mt-1 text-xs text-amber-300/80">
+                {#each stockErrors as err}
+                  <li>• {err.name} (còn {err.available}, cần {err.requested})</li>
+                {/each}
+              </ul>
+            </div>
+          </div>
+        {/if}
         <!-- CTA Button -->
         <button
-          class="w-full bg-primary hover:bg-blue-700 text-white font-bold rounded-xl py-4 text-base transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98]"
+          class="w-full bg-primary hover:bg-blue-700 text-white font-bold rounded-xl py-4 text-base transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           on:click={submitOrder}
-          disabled={loading}
+          disabled={loading || validatingStock || hasStockError}
         >
           <!-- Nút “Đặt hàng ngay” gọi submit + disable khi loading -->
-          {loading ? 'Đang xử lý...' : 'Đặt hàng ngay'}
+          {#if validatingStock}Đang kiểm tra...{:else if hasStockError}Không thể đặt hàng{:else if loading}Đang xử lý...{:else}Đặt hàng ngay{/if}
         </button>
         <p
           class="text-xs text-center text-slate-500 dark:text-[#5d6b82] mt-4 px-4 leading-normal"

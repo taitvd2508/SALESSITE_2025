@@ -6,6 +6,8 @@
     PUBLIC_SUPABASE_URL,
     PUBLIC_SUPABASE_ANON_KEY,
   } from '$env/static/public';
+  import { userPreferences } from '$lib/stores/userPreferences';
+  import { mergeCartFromServer } from '$lib/stores/cart';
 
   const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
@@ -31,7 +33,9 @@
         console.log('[callback] exchangeCodeForSession:', { data, error });
         if (error) throw error;
 
-        msg = 'Xác thực xong (code). Đang chuyển trang...';
+        msg = 'Xác thực xong (code). Đang đồng bộ dữ liệu...';
+        await userPreferences.mergeToServer();
+        await mergeCartFromServer();
         await goto(next);
         return;
       }
@@ -58,7 +62,9 @@
         console.log('[callback] setSession:', { data, error });
         if (error) throw error;
 
-        msg = 'Xác thực xong (hash). Đang chuyển trang...';
+        msg = 'Xác thực xong (hash). Đang đồng bộ dữ liệu...';
+        await userPreferences.mergeToServer();
+        await mergeCartFromServer();
         await goto(next);
         return;
       }
