@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { cart } from '$lib/stores/cart';
-
+  import { trackInteraction } from '$lib/stores/userPreferences';
+  import DebugProfile from '$lib/components/DebugProfile.svelte';
   export let data: any;
   let toast = '';
   let toastType: 'success' | 'warning' = 'success';
@@ -83,6 +84,12 @@
     const productId = data?.product?.id;
     // Không có productId thì: không track events (view, add_to_cart, recommendation,...)
     if (!productId) return;
+
+    // Track user preference based on product tags
+    const tags = data?.product?.tags;
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      trackInteraction(tags, 1);
+    }
 
     // (A) Tracking tránh spam view hoặc addtocard gì gì đó.
     const pid = Number(productId);
@@ -684,3 +691,4 @@
     </div>
   {/if}
 </main>
+<DebugProfile />

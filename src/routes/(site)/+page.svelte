@@ -1,3 +1,8 @@
+<script lang="ts">
+  import RecommendedForYou from '$lib/components/RecommendedForYou.svelte';
+  import DebugProfile from '$lib/components/DebugProfile.svelte';
+</script>
+
 <svelte:head>
   <title>TT STORE - Phụ kiện công nghệ cao cấp</title>
 </svelte:head>
@@ -346,72 +351,8 @@
       </div>
     </div>
   </section>
-  <!-- Personalized Recommendations -->
-  <section class="w-full max-w-[1200px] px-4 md:px-10 py-10">
-    <h2
-      class="text-white text-2xl font-bold leading-tight tracking-[-0.015em] mb-6"
-    >
-      Dành riêng cho bạn
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Setup Card 1 -->
-      <div
-        class="relative overflow-hidden rounded-2xl h-64 md:h-80 group cursor-pointer"
-      >
-        <div
-          class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-          data-alt="Minimalist desk setup with laptop and plant"
-          style="
-            background-image: url('https://elabcalarempslfrkwbx.supabase.co/storage/v1/object/public/products/homepage/banner2.png');
-          "
-        ></div>
-        <div
-          class="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors"
-        ></div>
-        <div class="absolute bottom-0 left-0 p-8">
-          <span
-            class="inline-block px-3 py-1 bg-primary text-white text-xs font-bold rounded mb-3"
-            >Office</span
-          >
-          <h3 class="text-white text-3xl font-bold mb-2">Minimalist Setup</h3>
-          <p class="text-gray-200 mb-4 text-sm max-w-xs">
-            Tinh tế, gọn gàng. Phụ kiện không dây giúp bàn làm việc thoáng đãng.
-          </p>
-          <span class="text-white underline font-medium text-sm"
-            >Khám phá ngay</span
-          >
-        </div>
-      </div>
-      <!-- Setup Card 2 -->
-      <div
-        class="relative overflow-hidden rounded-2xl h-64 md:h-80 group cursor-pointer"
-      >
-        <div
-          class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-          data-alt="RGB gaming desk setup"
-          style="
-            background-image: url('https://elabcalarempslfrkwbx.supabase.co/storage/v1/object/public/products/homepage/banner3.png');
-          "
-        ></div>
-        <div
-          class="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors"
-        ></div>
-        <div class="absolute bottom-0 left-0 p-8">
-          <span
-            class="inline-block px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded mb-3"
-            >Gaming</span
-          >
-          <h3 class="text-white text-3xl font-bold mb-2">Pro Gamer Space</h3>
-          <p class="text-gray-200 mb-4 text-sm max-w-xs">
-            Hiệu năng cao, LED RGB rực rỡ. Nâng tầm trải nghiệm chiến game.
-          </p>
-          <span class="text-white underline font-medium text-sm"
-            >Khám phá ngay</span
-          >
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Personalized Recommendations (Dynamic) -->
+  <RecommendedForYou />
   <!-- Voucher Banner -->
   <section class="w-full max-w-[1200px] px-4 md:px-10 py-6">
     <div
@@ -538,3 +479,4 @@
     </div>
   </section>
 </main>
+<DebugProfile />

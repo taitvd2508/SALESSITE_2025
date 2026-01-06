@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   //1) Product by slug
   const { data: product, error: productErr } = await supabase
     .from('products')
-    .select('id,slug,name,brand,type,price,old_price,quantity,description,images,active,created_at')
+    .select('id,slug,name,brand,type,price,old_price,quantity,description,images,tags,active,created_at')
     .eq('slug', slug)
     .eq('active', true)
     .single();
