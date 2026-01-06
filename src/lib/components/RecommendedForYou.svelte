@@ -52,6 +52,8 @@
         .eq('active', true)
         .overlaps('tags', [tag])
         .order('created_at', { ascending: false })
+        //.order('price', { ascending: true }) - cheapest first
+        //.order('name', { ascending: true }) - alphabetical
         .limit(limit + 1); // Fetch one extra in case we need to exclude current product
 
       const { data, error: fetchError } = await query;
