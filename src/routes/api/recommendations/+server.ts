@@ -6,11 +6,18 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
 const supabase = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+function num(v: any): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function uniqNums(arr: number[]) {
+  return Array.from(new Set(arr)).filter((x) => Number.isFinite(x));
+}
+
 export const GET: RequestHandler = async ({ cookies, url, locals }) => {
-  // cookie session cho guest tracking
   const sid = cookies.get('tt_sid') ?? null;
 
-  // userId (Login sẽ có).
   let userId: string | null = null;
   try {
     const sess = await locals.getSession?.();
@@ -19,138 +26,230 @@ export const GET: RequestHandler = async ({ cookies, url, locals }) => {
     userId = null;
   }
 
-  // current product id (URL /api/recommendations?current=123)
+  // optional current (product detail)
   const currentParam = url.searchParams.get('current');
   const currentProductId = currentParam ? Number(currentParam) : null;
-  const currentIdValid =
-    currentProductId !== null && !Number.isNaN(currentProductId);
+  const hasCurrent =
+    currentProductId !== null && Number.isFinite(currentProductId);
 
-  // Không có sid và cũng không có user => không thể cá nhân hoá
-  if (!userId && !sid)
+  if (!userId && !sid && !hasCurrent) {
+    // homepage mà không có session/user thì không cá nhân hoá được
     return json({
       ok: true,
       forYou: [],
       debug: { reason: 'no-user-no-session' },
     });
+  }
 
-  // 1) Lấy recent view theo user_id (ưu tiên) hoặc session_id
-  // ---------------------------------------------------------
-  let evQuery = supabase
-    .from('user_events')
-    .select('product_id, created_at')
-    .eq('event_type', 'view_product')
-    .not('product_id', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(5);
+  // 0) build exclude list
+  const excludeIds: number[] = [];
+  if (hasCurrent) excludeIds.push(currentProductId!);
 
-  if (userId) evQuery = evQuery.eq('user_id', userId);
-  else evQuery = evQuery.eq('session_id', sid);
+  // 1) recent views (để làm anchor cho homepage / fallback)
+  let recentIds: number[] = [];
+  if (userId || sid) {
+    let evQuery = supabase
+      .from('user_events')
+      .select('product_id, created_at')
+      .eq('event_type', 'view_product')
+      .not('product_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-  const { data: recentViews, error: evErr } = await evQuery;
-  if (evErr) return json({ ok: false, error: evErr.message }, { status: 500 });
+    if (userId) evQuery = evQuery.eq('user_id', userId);
+    else evQuery = evQuery.eq('session_id', sid);
 
-  // product_id có thể là bigint => ép Number
-  const recentIds = Array.from(
-    new Set(
+    const { data: recentViews, error: evErr } = await evQuery;
+    if (evErr)
+      return json({ ok: false, error: evErr.message }, { status: 500 });
+
+    recentIds = uniqNums(
       (recentViews ?? [])
-        .map((x) => x.product_id)
-        .filter((v) => v !== null && v !== undefined)
-    )
-  )
-    .map((id) => Number(id))
-    .filter((id) => Number.isFinite(id))
-    .filter((id) => (currentIdValid ? id !== currentProductId : true));
+        .map((x) => Number(x.product_id))
+        .filter((id) => Number.isFinite(id))
+        .filter((id) => (hasCurrent ? id !== currentProductId : true))
+    );
 
-  if (recentIds.length === 0) {
-    return json({
-      ok: true,
-      forYou: [],
-      debug: { userId, sid, recentIds, reason: 'no-recent-views' },
-    });
+    excludeIds.push(...recentIds);
   }
 
-  // // 2) Lấy type/brand của những sản phẩm đã xem
-  const { data: recentProducts, error: rpErr } = await supabase
-    .from('products')
-    .select('id,type,brand')
-    .in('id', recentIds)
-    .eq('active', true);
+  const excludeUniq = uniqNums(excludeIds);
+  const excludeSqlList = excludeUniq.length
+    ? `(${excludeUniq.join(',')})`
+    : null;
 
-  if (rpErr) return json({ ok: false, error: rpErr.message }, { status: 500 });
+  // helper: map products by ids (giữ order theo ids input)
+  async function fetchProductsByIds(ids: number[]) {
+    const clean = uniqNums(ids);
+    if (!clean.length) return [];
 
-  const types = Array.from(
-    new Set((recentProducts ?? []).map((p) => p.type).filter(Boolean))
-  );
-  const brands = Array.from(
-    new Set((recentProducts ?? []).map((p) => p.brand).filter(Boolean))
-  );
-
-  // loại trừ: sản phẩm đã xem + sản phẩm đang xem
-  const excludeIds = Array.from(
-    new Set([
-      ...(recentIds ?? []),
-      ...(currentIdValid ? [currentProductId!] : []),
-    ])
-  );
-
-  //BIGINT => NOT IN (1,2,3) KHÔNG QUOTE
-  const excludeSqlList =
-    excludeIds.length > 0 ? `(${excludeIds.join(',')})` : null;
-
-  // 3) Ưu tiên: Gợi ý theo TYPE trước
-  let forYou: any[] = [];
-
-  // ưu tiên cùng type
-  if (types.length > 0) {
-    let q = supabase
-      .from('products')
-      .select('id,slug,name,price,old_price,images,brand,type') //thêm slug để UI href
-      .in('type', types)
-      .eq('active', true)
-      .limit(8);
-
-    if (excludeSqlList) q = q.not('id', 'in', excludeSqlList);
-
-    const { data, error } = await q;
-    if (error)
-      return json({ ok: false, error: error.message }, { status: 500 });
-
-    forYou = data ?? [];
-  }
-
-  // 4) Nếu chưa đủ => bổ sung theo BRAND
-  if (forYou.length < 8 && brands.length > 0) {
     let q = supabase
       .from('products')
       .select('id,slug,name,price,old_price,images,brand,type')
-      .in('brand', brands)
-      .eq('active', true)
-      .limit(8);
-
-    if (excludeSqlList) q = q.not('id', 'in', excludeSqlList);
+      .in('id', clean)
+      .eq('active', true);
 
     const { data, error } = await q;
-    if (error)
-      return json({ ok: false, error: error.message }, { status: 500 });
+    if (error) throw new Error(error.message);
 
-    // merge unique
     const map = new Map<number, any>();
-    for (const p of forYou) map.set(p.id, p);
-    for (const p of data ?? []) map.set(p.id, p);
-    forYou = Array.from(map.values()).slice(0, 8);
+    for (const p of data ?? []) map.set(Number(p.id), p);
+
+    // giữ nguyên thứ tự ids (weight/trending order)
+    return clean.map((id) => map.get(id)).filter(Boolean);
   }
+
+  // 2) PRIORITY A: nếu có current => ưu tiên mua kèm theo similar_products_copurchase
+  let picked: any[] = [];
+
+  if (hasCurrent) {
+    const { data: simRows, error: simErr } = await supabase
+      .from('similar_products_copurchase')
+      .select('similar_product_id, weight')
+      .eq('product_id', currentProductId)
+      .order('weight', { ascending: false })
+      .limit(12);
+
+    if (simErr)
+      return json({ ok: false, error: simErr.message }, { status: 500 });
+
+    const simIds = uniqNums(
+      (simRows ?? [])
+        .map((r: any) => Number(r.similar_product_id))
+        .filter((id) => Number.isFinite(id))
+        .filter((id) => !excludeUniq.includes(id))
+    );
+
+    try {
+      const simProducts = await fetchProductsByIds(simIds);
+      picked.push(...simProducts);
+    } catch (e: any) {
+      return json(
+        { ok: false, error: String(e?.message ?? e) },
+        { status: 500 }
+      );
+    }
+  }
+
+  // 3) PRIORITY B: score theo type/brand/price dựa trên anchor (sản phẩm xem gần nhất hoặc current)
+  // anchor = current nếu có, else = recentIds[0]
+  const anchorId = hasCurrent ? currentProductId! : recentIds[0];
+
+  if (picked.length < 8 && anchorId) {
+    const { data: anchor, error: aErr } = await supabase
+      .from('products')
+      .select('id,type,brand,price')
+      .eq('id', anchorId)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (aErr) return json({ ok: false, error: aErr.message }, { status: 500 });
+
+    const anchorType = anchor?.type ?? null;
+    const anchorBrand = anchor?.brand ?? null;
+    const anchorPrice = num(anchor?.price);
+
+    // lấy candidate rộng hơn 1 chút: cùng type OR cùng brand
+    // (Supabase filter OR: dùng .or)
+    let cand = supabase
+      .from('products')
+      .select('id,slug,name,price,old_price,images,brand,type')
+      .eq('active', true)
+      .limit(80);
+
+    const orParts: string[] = [];
+    if (anchorType) orParts.push(`type.eq.${anchorType}`);
+    if (anchorBrand) orParts.push(`brand.eq.${anchorBrand}`);
+    if (orParts.length) cand = cand.or(orParts.join(','));
+
+    if (excludeSqlList) cand = cand.not('id', 'in', excludeSqlList);
+
+    // order ổn định để đỡ cảm giác “nhảy”
+    cand = cand.order('id', { ascending: false });
+
+    const { data: candidates, error: cErr } = await cand;
+    if (cErr) return json({ ok: false, error: cErr.message }, { status: 500 });
+
+    const exist = new Set(picked.map((x) => Number(x.id)));
+
+    const scored = (candidates ?? [])
+      .filter((p) => !exist.has(Number(p.id)))
+      .map((p) => {
+        let score = 0;
+        if (anchorType && p.type === anchorType) score += 2;
+        if (anchorBrand && p.brand === anchorBrand) score += 1;
+
+        const pPrice = num(p.price);
+        if (anchorPrice !== null && pPrice !== null) {
+          if (pPrice >= anchorPrice * 0.8 && pPrice <= anchorPrice * 1.2)
+            score += 1;
+        }
+
+        return { ...p, _score: score };
+      })
+      .filter((p) => (p._score ?? 0) > 0)
+      .sort(
+        (a, b) =>
+          (b._score ?? 0) - (a._score ?? 0) || Number(b.id) - Number(a.id)
+      )
+      .slice(0, 8 - picked.length)
+      .map(({ _score, ...rest }) => rest);
+
+    picked.push(...scored);
+  }
+
+  // 4) PRIORITY C: fill bằng trending_products (đúng schema product_id + score_30d)
+  if (picked.length < 8) {
+    let tq = supabase
+      .from('trending_products')
+      .select('product_id, score_30d')
+      .order('score_30d', { ascending: false })
+      .limit(30);
+
+    // loại trừ những cái exclude (recent/current) + đã picked
+    // trending_products không có id mà có product_id
+    const pickedIds = new Set(picked.map((x) => Number(x.id)));
+    const allExclude = new Set([...excludeUniq, ...pickedIds]);
+
+    const { data: trendRows, error: tErr } = await tq;
+    if (tErr) return json({ ok: false, error: tErr.message }, { status: 500 });
+
+    const trendIds = uniqNums(
+      (trendRows ?? [])
+        .map((r: any) => Number(r.product_id))
+        .filter((id) => Number.isFinite(id))
+        .filter((id) => !allExclude.has(id))
+    ).slice(0, 12);
+
+    try {
+      const trendProducts = await fetchProductsByIds(trendIds);
+      picked.push(...trendProducts);
+    } catch (e: any) {
+      return json(
+        { ok: false, error: String(e?.message ?? e) },
+        { status: 500 }
+      );
+    }
+  }
+
+  const forYou = picked.slice(0, 8);
 
   return json({
     ok: true,
+    forYou,
     debug: {
+      used: userId ? 'user_id' : sid ? 'session_id' : 'current-only',
       userId,
       sid,
+      currentProductId: hasCurrent ? currentProductId : null,
       recentIds,
-      excludeIds,
-      types,
-      brands,
-      used: userId ? 'user_id' : 'session_id',
+      anchorId,
+      excludeIds: excludeUniq,
+      scoring: { type: 2, brand: 1, priceWithin20Percent: 1 },
+      pickedCount: forYou.length,
+      pipeline: hasCurrent
+        ? ['copurchase', 'score(type/brand/price)', 'trending_fill']
+        : ['score(type/brand/price)', 'trending_fill'],
     },
-    forYou,
   });
 };
