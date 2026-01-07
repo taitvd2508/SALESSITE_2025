@@ -26,9 +26,10 @@
     }
 
     //check if adding 1 more would exceed available stock
-    const currentQty = $cart.items.find((x) => x.product_id === Number(p.id))?.quantity ?? 0;
+    const currentQty =
+      $cart.items.find((x) => x.product_id === Number(p.id))?.quantity ?? 0;
     const maxQty = p.quantity ?? 0;
-    
+
     if (currentQty >= maxQty) {
       showToast(`Đã đạt số lượng giới hạn: ${maxQty}`, 'warning');
       return;
@@ -396,7 +397,7 @@
             >
             <select
               class="bg-[#101622] border border-[#232f48] text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2"
-              bind:value={sort}
+              value={sort}
               on:change={onSortChange}
             >
               <option value="newest">Mới nhất</option>
