@@ -230,6 +230,39 @@ export function cartTotals(items: CartItem[]) {
   return { subtotal, count };
 }
 
+// Auto-save cart to server with debounce (for logged-in users)
+if (browser) {
+  let saveTimeout: ReturnType<typeof setTimeout>;
+  let lastSavedJson = '';
+  let isFirstLoad = true;
+
+  cart.subscribe((state) => {
+    // Skip the initial load to avoid unnecessary save
+    if (isFirstLoad) {
+      isFirstLoad = false;
+      lastSavedJson = JSON.stringify(state.items);
+      return;
+    }
+
+    // Clear previous timer
+    clearTimeout(saveTimeout);
+
+    // Set new timer - save 2 seconds after last change
+    saveTimeout = setTimeout(async () => {
+      const currentJson = JSON.stringify(state.items);
+      
+      // Skip if cart unchanged
+      if (currentJson === lastSavedJson) return;
+
+      // Try to save (will fail silently if not logged in)
+      const success = await saveCartToServer();
+      if (success) {
+        lastSavedJson = currentJson;
+      }
+    }, 2000);
+  });
+}
+
 export function vnd(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
 }

@@ -24,9 +24,14 @@
 
   let loading = false;
   let errorMsg = '';
+  
+  // Stock validation state
+  let stockErrors: Array<{ product_id: number; name: string; requested: number; available: number }> = [];
+  let validatingStock = true;
 
   $: items = $cart.items as CartItem[];
   $: totals = cartTotals(items);
+  $: hasStockError = stockErrors.length > 0;
 
   function coverOf(x: CartItem) {
     return x.image ?? '/images/placeholder-product.png';
@@ -34,9 +39,50 @@
 
   let newAccountMsg = '';
 
+  // Validate stock against database
+  async function validateStock() {
+    if (items.length === 0) {
+      stockErrors = [];
+      validatingStock = false;
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((x) => ({
+            product_id: x.product_id,
+            quantity: x.quantity,
+          })),
+        }),
+      });
+
+      const result = await res.json();
+      
+      if (!result.ok && result.errors) {
+        stockErrors = result.errors;
+      } else {
+        stockErrors = [];
+      }
+    } catch (e) {
+      console.error('Stock validation failed:', e);
+      stockErrors = [];
+    } finally {
+      validatingStock = false;
+    }
+  }
+
   async function submitOrder() {
     errorMsg = '';
     newAccountMsg = '';
+    
+    if (hasStockError) {
+      errorMsg = 'Sản phẩm tạm thời không khả dụng, mong quý khách thứ lỗi';
+      return;
+    }
+    
     if (!items.length) {
       errorMsg = 'Giỏ hàng trống.';
       return;
@@ -86,9 +132,15 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
     //nếu giỏ trống, đá về cart
-    if (!$cart.items.length) goto('/cart');
+    if (!$cart.items.length) {
+      goto('/cart');
+      return;
+    }
+    
+    // Validate stock on page load
+    await validateStock();
   });
 </script>
 
