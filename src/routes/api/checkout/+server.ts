@@ -166,6 +166,13 @@ export const POST: RequestHandler = async (event) => {
         { status: 400 }
       );
     }
+    // Stock validation
+    if (p.quantity < it.quantity) {
+      return json(
+        { ok: false, error: 'Sản phẩm tạm thời không khả dụng, mong quý khách thứ lỗi' },
+        { status: 400 }
+      );
+    }
     total_price += Number(p.price) * it.quantity;
   }
 

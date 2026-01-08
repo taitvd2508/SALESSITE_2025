@@ -1,8 +1,14 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { cart, cartTotals, vnd, type CartItem } from '$lib/stores/cart';
 
   $: items = $cart.items as CartItem[];
   $: totals = cartTotals(items);
+
+  // Stock validation state
+  let validating = false;
+  let stockError = '';
+  let stockErrorItems: Array<{ name: string; requested: number; available: number }> = [];
 
   function coverOf(x: CartItem) {
     return x.image ?? '/images/placeholder-product.png';
@@ -12,6 +18,43 @@
     const v = Number(n);
     if (Number.isNaN(v) || v < 1) return 1;
     return Math.floor(v);
+  }
+
+  async function validateAndCheckout() {
+    if (items.length === 0) return;
+
+    validating = true;
+    stockError = '';
+    stockErrorItems = [];
+
+    try {
+      const res = await fetch('/api/cart/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((x) => ({
+            product_id: x.product_id,
+            quantity: x.quantity,
+          })),
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!result.ok && result.errors && result.errors.length > 0) {
+        stockError = 'Sản phẩm tạm thời không khả dụng, mong quý khách thứ lỗi';
+        stockErrorItems = result.errors;
+        return;
+      }
+
+      // Stock OK - navigate to checkout
+      await goto('/checkout');
+    } catch (e) {
+      console.error('Stock validation failed:', e);
+      stockError = 'Có lỗi xảy ra khi kiểm tra tồn kho';
+    } finally {
+      validating = false;
+    }
   }
 </script>
 
@@ -131,12 +174,32 @@
             </div>
           </div>
 
-          <a
-            href="/checkout"
-            class="flex items-center justify-center block w-full h-12 mt-6 font-bold text-white transition-colors rounded-lg bg-primary hover:bg-blue-600"
+          <button
+            on:click={validateAndCheckout}
+            disabled={validating}
+            class="flex items-center justify-center w-full h-12 mt-6 font-bold text-white transition-colors rounded-lg bg-primary hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Tiến hành thanh toán
-          </a>
+            {#if validating}
+              Đang kiểm tra...
+            {:else}
+              Tiến hành thanh toán
+            {/if}
+          </button>
+
+          {#if stockError}
+            <div class="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <p class="text-sm font-medium text-red-400">{stockError}</p>
+              {#if stockErrorItems.length > 0}
+                <ul class="mt-2 text-sm text-red-300 space-y-1">
+                  {#each stockErrorItems as item}
+                    <li>
+                      • {item.name}: chỉ còn {item.available} sản phẩm
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          {/if}
         </div>
       </aside>
     </div>
