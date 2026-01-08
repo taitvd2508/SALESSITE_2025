@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const { data: product, error } = await locals.supabase
     .from('products')
     .select(
-      'id, name, slug, brand, type, price, old_price, quantity, description, images, active, created_at, updated_at'
+      'id, name, slug, brand, type, price, old_price, quantity, description, images, tags, active, created_at, updated_at'
     )
     .eq('id', id)
     .single();
@@ -59,6 +59,16 @@ export const actions: Actions = {
       images = [];
     }
 
+    //parse tags text[]
+    const tagsRaw = String(fd.get('tags') ?? '[]');
+    let tags: string[] = [];
+    try {
+      const parsed = JSON.parse(tagsRaw);
+      tags = Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch {
+      tags = [];
+    }
+
     //validate
     if (!name || !slug || !brand || !type) {
       return fail(400, {
@@ -85,6 +95,7 @@ export const actions: Actions = {
       quantity,
       description,
       images,
+      tags,
     };
 
     if (active !== null) payload.active = active;

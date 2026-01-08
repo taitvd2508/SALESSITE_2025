@@ -23,6 +23,12 @@
   let description = product?.description ?? '';
   let active: boolean = product?.active ?? true;
 
+  let tags: string[] = Array.isArray(product?.tags)
+    ? product.tags.map(String).filter(Boolean)
+    : [];
+  // input hiển thị dạng "tag1, tag2"
+  let tagsText = tags.join(', ');
+
   let images: string[] = Array.isArray(product?.images)
     ? [...product.images]
     : [];
@@ -33,6 +39,71 @@
   let uploading = false;
   let uploadError = '';
   let uploadOk = '';
+
+  let descEl: HTMLTextAreaElement | null = null;
+
+  function wrapSelection(before: string, after = before) {
+    if (!descEl) return;
+
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    const selected = value.slice(start, end) || 'text';
+    description =
+      value.slice(0, start) + before + selected + after + value.slice(end);
+
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      const s = start + before.length;
+      const e = s + selected.length;
+      descEl.focus();
+      descEl.setSelectionRange(s, e);
+    });
+  }
+
+  function prefixLines(prefix: string) {
+    if (!descEl) return;
+
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = value.indexOf('\n', end);
+    const blockEnd = lineEnd === -1 ? value.length : lineEnd;
+
+    const block = value.slice(lineStart, blockEnd);
+    const lines = block.split('\n');
+    const nextBlock = lines
+      .map((l) => (l.trim() ? `${prefix}${l}` : l))
+      .join('\n');
+
+    description = value.slice(0, lineStart) + nextBlock + value.slice(blockEnd);
+
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      descEl.focus();
+      descEl.setSelectionRange(lineStart, lineStart + nextBlock.length);
+    });
+  }
+
+  function insertAtCursor(text: string) {
+    if (!descEl) return;
+
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    description = value.slice(0, start) + text + value.slice(end);
+
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      const pos = start + text.length;
+      descEl.focus();
+      descEl.setSelectionRange(pos, pos);
+    });
+  }
 
   const slugify = (input: string, maxLen = 80) => {
     const s = (input ?? '')
@@ -261,6 +332,7 @@
     >
       <input type="hidden" name="active" value={String(active)} />
       <input type="hidden" name="images" value={JSON.stringify(images)} />
+      <input type="hidden" name="tags" value={JSON.stringify(tags)} />
 
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div class="flex flex-col gap-2">
@@ -302,7 +374,29 @@
             required
           />
           <p class="text-xs text-[#92a4c9]">
-            Folder upload: <b>products/{typeFolder()}</b>
+            Folder upload: <b>products/{typeFolder()}/{brandFolder()}</b>
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-semibold text-white">Tags</label>
+
+          <input
+            class="h-12 rounded-xl bg-[#111a2a] border border-[#232f48] text-white px-4 outline-none focus:border-primary"
+            placeholder="VD: gaming, office, student, design,..."
+            bind:value={tagsText}
+            on:blur={() => {
+              tags = (tagsText ?? '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+
+              tagsText = tags.join(', ');
+            }}
+          />
+
+          <p class="text-xs text-[#92a4c9]">
+            Nhập nhiều tag, ngăn cách bằng dấu phẩy.
           </p>
         </div>
 
@@ -339,24 +433,133 @@
             min="0"
           />
         </div>
-
-        <div class="flex items-center gap-3 mt-2">
-          <button
-            type="button"
-            class="h-10 px-4 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48] transition-colors"
-            on:click={() => (active = !active)}
-          >
-            Trạng thái: {active ? 'Active' : 'Inactive'}
-          </button>
-        </div>
       </div>
 
       <div class="flex flex-col gap-2 mt-6">
+        <label class="text-sm font-semibold text-white">Trạng thái</label>
+        <button
+          type="button"
+          class="h-10 px-4 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48] transition-colors"
+          on:click={() => (active = !active)}
+        >
+          {active ? 'Active (Đang hiển thị)' : 'Inactive (Đang ẩn)'}
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2 mt-4">
         <label class="text-sm font-semibold text-white">Mô tả</label>
+
+        <!-- Toolbar -->
+        <div
+          class="flex flex-wrap gap-2 p-2 rounded-xl border border-[#232f48] bg-[#0b0f16]"
+        >
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('## ')}
+            title="Tiêu đề (Heading)"
+          >
+            <span class="font-bold">H</span><span class="opacity-70">2</span>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('**', '**')}
+            title="Đậm (Bold)"
+          >
+            <b>B</b>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('*', '*')}
+            title="Nghiêng (Italic)"
+          >
+            <i>I</i>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('<u>', '</u>')}
+            title="Gạch chân (Underline)"
+          >
+            <span style="text-decoration: underline;">U</span>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('- ')}
+            title="Gạch đầu dòng"
+          >
+            • List
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('1. ')}
+            title="Đánh số"
+          >
+            1. List
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => insertAtCursor('\n')}
+            title="Xuống dòng"
+          >
+            ↵
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('[', '](https://)')}
+            title="Link"
+          >
+            🔗 Link
+          </button>
+
+          <!-- (Tuỳ chọn) Màu chữ bằng HTML span -->
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() =>
+              wrapSelection(
+                '<span style=&quot;color:#60a5fa&quot;>',
+                '</span>'
+              )}
+            title="Màu xanh"
+          >
+            A<span class="ml-1 text-[#60a5fa]">●</span>
+          </button>
+
+          <!-- (Tuỳ chọn) Cỡ chữ -->
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() =>
+              wrapSelection(
+                '<span style=&quot;font-size:18px&quot;>',
+                '</span>'
+              )}
+            title="Chữ lớn"
+          >
+            A+
+          </button>
+        </div>
+
         <textarea
-          class="min-h-[140px] rounded-xl bg-[#111a2a] border border-[#232f48] text-white px-4 py-3 outline-none focus:border-primary"
+          bind:this={descEl}
+          class="min-h-[160px] rounded-xl px-4 py-3 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
           name="description"
           bind:value={description}
+          placeholder="Nhập mô tả... (có thể bôi đen rồi bấm nút B/I/U/List ở trên)"
         />
       </div>
 

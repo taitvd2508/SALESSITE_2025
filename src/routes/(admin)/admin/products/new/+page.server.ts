@@ -45,6 +45,16 @@ export const actions: Actions = {
     const quantity = Number(fd.get('quantity') ?? 0);
     const description = String(fd.get('description') ?? '').trim();
 
+    // tags (JSON string -> text[])
+    const tagsRaw = String(fd.get('tags') ?? '[]');
+    let tags: string[] = [];
+    try {
+      const parsed = JSON.parse(tagsRaw);
+      tags = Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch {
+      tags = [];
+    }
+
     //URL images (JSON string)
     const imagesRaw = String(fd.get('images') ?? '[]');
     let urlImages: string[] = [];
@@ -82,6 +92,7 @@ export const actions: Actions = {
         old_price,
         quantity: Number.isFinite(quantity) ? quantity : 0,
         description,
+        tags,
         images: urlImages,
         active: true,
       })
@@ -134,7 +145,7 @@ export const actions: Actions = {
 
       const { error: up2Err } = await locals.supabase
         .from('products')
-        .update({ images: merged })
+        .update({ images: merged, tags })
         .eq('id', productId);
 
       if (up2Err) {

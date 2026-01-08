@@ -10,6 +10,8 @@
   let old_price: any = '';
   let quantity: any = 0;
   let description = '';
+  let tags: string[] = [];
+  let tagsText = ''; // để nhập dạng: "gaming, office,..."
 
   //URL images (dán link)
   let images: string[] = [];
@@ -44,6 +46,75 @@
     filePreviews = keep;
     //NOTE: không thể “xóa 1 file” khỏi input.files một cách chuẩn trong browser.
     //Nếu cần xóa từng file thật sự: làm custom uploader (drag-drop) + submit bằng fetch.
+  }
+
+  let descEl: HTMLTextAreaElement | null = null;
+
+  function wrapSelection(before: string, after = before) {
+    if (!descEl) return;
+
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    const selected = value.slice(start, end) || 'text';
+    const next =
+      value.slice(0, start) + before + selected + after + value.slice(end);
+
+    description = next;
+
+    // đặt lại con trỏ/selection
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      const selStart = start + before.length;
+      const selEnd = selStart + selected.length;
+      descEl.focus();
+      descEl.setSelectionRange(selStart, selEnd);
+    });
+  }
+
+  function prefixLines(prefix: string) {
+    if (!descEl) return;
+
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    // lấy đoạn theo selection, nếu không chọn gì thì áp cho dòng hiện tại
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = value.indexOf('\n', end);
+    const blockEnd = lineEnd === -1 ? value.length : lineEnd;
+
+    const block = value.slice(lineStart, blockEnd);
+    const lines = block.split('\n');
+    const nextBlock = lines
+      .map((l) => (l.trim() ? `${prefix}${l}` : l))
+      .join('\n');
+
+    description = value.slice(0, lineStart) + nextBlock + value.slice(blockEnd);
+
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      descEl.focus();
+      // giữ selection tương đối
+      descEl.setSelectionRange(lineStart, lineStart + nextBlock.length);
+    });
+  }
+
+  function insertAtCursor(text: string) {
+    if (!descEl) return;
+    const start = descEl.selectionStart ?? 0;
+    const end = descEl.selectionEnd ?? 0;
+    const value = description ?? '';
+
+    description = value.slice(0, start) + text + value.slice(end);
+
+    requestAnimationFrame(() => {
+      if (!descEl) return;
+      const pos = start + text.length;
+      descEl.focus();
+      descEl.setSelectionRange(pos, pos);
+    });
   }
 </script>
 
@@ -111,7 +182,7 @@
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-semibold text-white">Thương hiệu *</label>
+          <label class="text-sm font-semibold text-white">Brand *</label>
           <input
             class="h-12 rounded-xl px-4 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
             name="brand"
@@ -122,9 +193,7 @@
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-sm font-semibold text-white"
-            >Danh mục / Type *</label
-          >
+          <label class="text-sm font-semibold text-white">Type *</label>
           <input
             class="h-12 rounded-xl px-4 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
             name="type"
@@ -132,6 +201,25 @@
             placeholder="VD: Bàn phím"
             required
           />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-semibold text-white">Tags</label>
+          <input
+            class="h-12 rounded-xl px-4 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
+            placeholder="Ví dụ: gaming, rtx4060, i7, 16gb"
+            bind:value={tagsText}
+            on:blur={() => {
+              tags = (tagsText ?? '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+              tagsText = tags.join(', ');
+            }}
+          />
+          <p class="text-xs text-[#92a4c9]">
+            Nhập nhiều tag, ngăn cách bằng dấu phẩy.
+          </p>
         </div>
 
         <div class="flex flex-col gap-2">
@@ -172,11 +260,118 @@
 
       <div class="flex flex-col gap-2 mt-4">
         <label class="text-sm font-semibold text-white">Mô tả</label>
+
+        <!-- Toolbar -->
+        <div
+          class="flex flex-wrap gap-2 p-2 rounded-xl border border-[#232f48] bg-[#0b0f16]"
+        >
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('## ')}
+            title="Tiêu đề (Heading)"
+          >
+            <span class="font-bold">H</span><span class="opacity-70">2</span>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('**', '**')}
+            title="Đậm (Bold)"
+          >
+            <b>B</b>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('*', '*')}
+            title="Nghiêng (Italic)"
+          >
+            <i>I</i>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('<u>', '</u>')}
+            title="Gạch chân (Underline)"
+          >
+            <span style="text-decoration: underline;">U</span>
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('- ')}
+            title="Gạch đầu dòng"
+          >
+            • List
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => prefixLines('1. ')}
+            title="Đánh số"
+          >
+            1. List
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => insertAtCursor('\n')}
+            title="Xuống dòng"
+          >
+            ↵
+          </button>
+
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() => wrapSelection('[', '](https://)')}
+            title="Link"
+          >
+            🔗 Link
+          </button>
+
+          <!-- (Tuỳ chọn) Màu chữ bằng HTML span -->
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() =>
+              wrapSelection(
+                '<span style=&quot;color:#60a5fa&quot;>',
+                '</span>'
+              )}
+            title="Màu xanh"
+          >
+            A<span class="ml-1 text-[#60a5fa]">●</span>
+          </button>
+
+          <!-- (Tuỳ chọn) Cỡ chữ -->
+          <button
+            type="button"
+            class="h-9 px-3 rounded-lg border border-[#232f48] text-white hover:bg-[#232f48]"
+            on:click={() =>
+              wrapSelection(
+                '<span style=&quot;font-size:18px&quot;>',
+                '</span>'
+              )}
+            title="Chữ lớn"
+          >
+            A+
+          </button>
+        </div>
+
         <textarea
-          class="min-h-[140px] rounded-xl px-4 py-3 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
+          bind:this={descEl}
+          class="min-h-[160px] rounded-xl px-4 py-3 bg-[#0b0f16] border border-[#232f48] text-white outline-none focus:border-primary"
           name="description"
           bind:value={description}
-          placeholder="Mô tả sản phẩm..."
+          placeholder="Nhập mô tả... (có thể bôi đen rồi bấm nút B/I/U/List ở trên)"
         />
       </div>
     </div>
@@ -235,6 +430,7 @@
 
         <!-- hidden JSON for server -->
         <input type="hidden" name="images" value={JSON.stringify(images)} />
+        <input type="hidden" name="tags" value={JSON.stringify(tags)} />
       </div>
 
       <div class="pt-4 border-t border-[#232f48]">
@@ -256,7 +452,9 @@
             on:change={onPickFiles}
           />
           <p class="mt-2 text-xs text-[#92a4c9]">
-            Ảnh sẽ lưu theo: <b>products/&lt;type&gt;/&lt;slug&gt;-01.jpg</b>...
+            Ảnh sẽ lưu theo: <b
+              >products/&lt;type&gt;/&lt;brand&gt;/&lt;slug&gt;-01.jpg</b
+            >...
           </p>
         </div>
 
