@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { cart } from '$lib/stores/cart';
+  import { marked } from 'marked';
 
   export let data: any;
   let toast = '';
@@ -30,7 +31,8 @@
   $: product = data?.product;
   $: productId = product ? Number(product.id) : null;
   $: title = product?.name ?? '';
-  $: desc = product?.description ?? '';
+  $: descHtml = marked.parse(product?.description ?? '');
+  // $: desc = product?.description ?? '';
   $: price = product?.price ?? 0;
   $: brand = product?.brand ?? '';
   $: type = product?.type ?? '';
@@ -40,7 +42,8 @@
     images?.[selectedIndex] ?? images?.[0] ?? '/images/placeholder-product.png';
 
   //cart quantity sync - read the current quantity of this product in cart
-  $: cartQty = $cart.items.find((x) => x.product_id === productId)?.quantity ?? 0;
+  $: cartQty =
+    $cart.items.find((x) => x.product_id === productId)?.quantity ?? 0;
   $: maxQty = product?.quantity ?? 1;
 
   function incCartQty() {
@@ -167,7 +170,9 @@
       }
     }
 
-    showToast(cartQty === 0 ? 'Đã thêm vào giỏ' : 'Cập nhật giỏ hànhg thành công');
+    showToast(
+      cartQty === 0 ? 'Đã thêm vào giỏ' : 'Cập nhật giỏ hànhg thành công'
+    );
   }
 
   //add đúng sản phẩm card (forYou/trending/similar)
@@ -369,10 +374,10 @@
         </div>
 
         <!-- Short Description -->
-        <p class="text-[#92a4c9] text-base leading-relaxed">
-          {desc ||
+        <div class="prose prose-invert max-w-none text-[#92a4c9]">
+          {@html descHtml ||
             'Sản phẩm chính hãng, chất lượng cao. Vui lòng xem thêm thông tin bên dưới.'}
-        </p>
+        </div>
 
         <!-- Variants (giữ UI tĩnh để demo trước) -->
         <div class="flex flex-col gap-4">
@@ -499,7 +504,9 @@
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
       <div class="lg:col-span-8 space-y-6 text-[#d1d5db]">
         <h3 class="text-2xl font-bold text-white">Mô tả</h3>
-        <p class="leading-relaxed">{desc || 'Chưa có mô tả chi tiết.'}</p>
+        <div class="prose prose-invert max-w-none text-[#92a4c9]">
+          {@html descHtml || 'Chưa có mô tả chi tiết.'}
+        </div>
 
         {#if images.length > 0}
           <div class="my-6 overflow-hidden rounded-xl">
