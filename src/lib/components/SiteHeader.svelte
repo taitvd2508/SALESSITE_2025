@@ -1,7 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
-  import { cart, cartTotals, saveCartToServer, clearLocalCart } from '$lib/stores/cart';
+  import {
+    cart,
+    cartTotals,
+    saveCartToServer,
+    clearLocalCart,
+  } from '$lib/stores/cart';
   import { supabase } from '$lib/supabase/client'; //bạn phải có file này
 
   let q = '';
@@ -248,10 +253,10 @@
   async function logout() {
     //save cart to server before logout
     await saveCartToServer();
-    
+
     //clear localStorage cart
     clearLocalCart();
-    
+
     await supabase.auth.signOut();
 
     //ép SvelteKit reload lại +layout.server.ts => user/profile = null
@@ -265,9 +270,9 @@
 
   //cart merge toast notification (from sessionStorage after login)
   let cartMergeToast = '';
-  
+
   import { onMount } from 'svelte';
-  
+
   onMount(() => {
     const msg = sessionStorage.getItem('cart_merge_notification');
     if (msg) {
@@ -291,7 +296,7 @@
     <button
       type="button"
       class="ml-2 opacity-70 hover:opacity-100"
-      on:click={() => cartMergeToast = ''}
+      on:click={() => (cartMergeToast = '')}
     >
       <span class="material-symbols-outlined text-[16px]">close</span>
     </button>

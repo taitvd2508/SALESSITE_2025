@@ -58,7 +58,8 @@ function createCart() {
       update((state) => {
         const items = [...state.items];
         const i = items.findIndex((x) => x.product_id === item.product_id);
-        if (i >= 0) items[i] = { ...items[i], quantity: items[i].quantity + qty };
+        if (i >= 0)
+          items[i] = { ...items[i], quantity: items[i].quantity + qty };
         else items.push({ ...item, quantity: Math.max(1, qty) });
 
         const next = { items };
@@ -69,7 +70,28 @@ function createCart() {
 
     remove(product_id: number) {
       update((state) => {
-        const next = { items: state.items.filter((x) => x.product_id !== product_id) };
+        const next = {
+          items: state.items.filter((x) => x.product_id !== product_id),
+        };
+        save(next);
+        return next;
+      });
+    },
+
+    removeByKeyword(keyword: string) {
+      const k = (keyword ?? '').toLowerCase().trim();
+      if (!k) return;
+
+      update((state) => {
+        const next = {
+          items: state.items.filter((x) => {
+            const name = String(x.name ?? '').toLowerCase();
+            const slug = String(x.slug ?? '').toLowerCase();
+
+            // keyword có thể là "tai nghe", "bàn phím", "k380", "r7000p"...
+            return !name.includes(k) && !slug.includes(k);
+          }),
+        };
         save(next);
         return next;
       });
@@ -97,14 +119,14 @@ function createCart() {
       const state = get({ subscribe });
       const item = state.items.find((x) => x.product_id === product_id);
       if (!item) return;
-      
+
       //remove item if quantity would become 0 or less
       if (item.quantity <= 1) {
         this.remove(product_id);
       } else {
         this.setQty(product_id, item.quantity - 1);
       }
-    }
+    },
   };
 }
 
@@ -115,7 +137,7 @@ export async function saveCartToServer(): Promise<boolean> {
   if (!browser) return false;
   const state = get(cart);
   if (state.items.length === 0) return true;
-  
+
   try {
     const res = await fetch('/api/cart/save', {
       method: 'POST',
@@ -136,26 +158,31 @@ export async function saveCartToServer(): Promise<boolean> {
 }
 
 //load cart from server and merge with localStorage (for login)
-export async function mergeCartFromServer(): Promise<{ merged: boolean; addedCount: number }> {
+export async function mergeCartFromServer(): Promise<{
+  merged: boolean;
+  addedCount: number;
+}> {
   if (!browser) return { merged: false, addedCount: 0 };
-  
+
   try {
     const res = await fetch('/api/cart/load');
     const data = await res.json();
-    
+
     if (!data.ok || !Array.isArray(data.items) || data.items.length === 0) {
       return { merged: false, addedCount: 0 };
     }
-    
+
     const serverItems: CartItem[] = data.items;
     const localState = get(cart);
     const localItems = [...localState.items];
-    
+
     let addedCount = 0;
-    
+
     //merge: add server items to local cart
     for (const serverItem of serverItems) {
-      const localIndex = localItems.findIndex((x) => x.product_id === serverItem.product_id);
+      const localIndex = localItems.findIndex(
+        (x) => x.product_id === serverItem.product_id
+      );
       if (localIndex >= 0) {
         //product exists in local cart - add quantities
         localItems[localIndex] = {
@@ -169,12 +196,12 @@ export async function mergeCartFromServer(): Promise<{ merged: boolean; addedCou
         addedCount += serverItem.quantity;
       }
     }
-    
+
     if (addedCount > 0) {
       const next = { items: localItems };
       cart.set(next);
       save(next);
-      
+
       //clear server cart after merging
       await fetch('/api/cart/save', {
         method: 'POST',
@@ -182,7 +209,7 @@ export async function mergeCartFromServer(): Promise<{ merged: boolean; addedCou
         body: JSON.stringify({ items: [] }),
       });
     }
-    
+
     return { merged: true, addedCount };
   } catch (e) {
     console.error('mergeCartFromServer error:', e);
@@ -206,4 +233,3 @@ export function cartTotals(items: CartItem[]) {
 export function vnd(n: number) {
   return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
 }
-
