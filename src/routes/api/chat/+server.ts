@@ -153,6 +153,16 @@ function isCheckoutIntent(text: string) {
   );
 }
 
+function isGenericCheckoutOnly(text: string) {
+  const t = (text ?? '').toLowerCase().trim();
+  // chỉ coi là "chung chung" nếu KHÔNG có từ khóa sản phẩm đáng kể
+  // chấp nhận: "chốt 1 cái", "lấy 1 cái", "mua 1 cái", "chốt giúp tôi 1 cái"
+  // KHÔNG chấp nhận: "lấy 1 HyperX Cloud", "chốt k380", ...
+  return /^(?:chốt|lấy|mua|đặt|order)(?:\s+giúp|\s+cho\s+(?:tôi|mình))?(?:\s+\d{1,2}|\s+một)?(?:\s*(?:cái|chiếc|sp|sản phẩm))?\s*$/i.test(
+    t
+  );
+}
+
 function looksLikeSelectingFromList(text: string) {
   const t = (text ?? '').toLowerCase();
 
@@ -172,6 +182,105 @@ function looksLikeSelectingFromList(text: string) {
   if (/\bx\s*\d{1,2}\b/i.test(t)) return true;
 
   return false;
+}
+
+function isCompareIntent(text: string) {
+  const t = (text ?? '').toLowerCase();
+  return /(so\s*sánh|compare|vs\b|v\s*s\b|đối\s*chiếu)/.test(t);
+}
+
+// lấy ra 2 "key" để match: ưu tiên #n, nếu không thì ưu tiên model token, nếu không thì lấy theo cụm text
+function extractCompareKeys(text: string): { idxs: number[]; keys: string[] } {
+  const raw = (text ?? '').trim();
+
+  // 1) ưu tiên #n
+  const idxs = [...raw.matchAll(/#\s*(\d{1,2})/g)]
+    .map((m) => Number(m[1]))
+    .filter((n) => Number.isFinite(n) && n > 0);
+
+  // 2) bỏ các cụm điều khiển + số lượng "2 mẫu/2 sản phẩm"
+  const cleaned = raw
+    .toLowerCase()
+    .replace(/so\s*sánh|compare|đối\s*chiếu/gi, ' ')
+    .replace(/\b(giúp|cho tôi|cho mình|với|nhé)\b/gi, ' ')
+    .replace(/\b(2|hai)\s*(mẫu|sp|sản phẩm|mặt hàng|món)\b/gi, ' ')
+    .replace(/\b(mẫu|sp|sản phẩm|mặt hàng|món)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 3) split theo "và / vs / với / ,"
+  const parts = cleaned
+    .split(/\s*(?:và|vs|v\s*s|với|,|&|\+)\s*/gi)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const norm = (s: string) =>
+    (s ?? '')
+      .toLowerCase()
+      .replace(/^[\-\u2022\*]+\s*/g, '') // bỏ "- ", "• ", "* "
+      .replace(/^\d+\s+/g, '') // bỏ "2 " ở đầu nếu còn
+      .replace(/^(mẫu|mẫu số)\s*/g, '') // bỏ "mẫu ..."
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const keys: string[] = [];
+  for (const p of parts) {
+    const pp = norm(p);
+
+    // ưu tiên bắt model token trước
+    const model = pp.match(/\b[a-z]{1,8}\d{2,5}[a-z]?\b/i)?.[0];
+    keys.push(model ? model : pp);
+  }
+
+  return { idxs, keys: keys.filter(Boolean).slice(0, 2) };
+}
+
+// tìm 1 sản phẩm theo key từ list gần nhất, nếu không có thì search db
+async function resolveCompareItem(
+  supabase: any,
+  list: any[],
+  key: string,
+  inferredType: string,
+  inferredBrand: string
+) {
+  const k = (key ?? '')
+    .toLowerCase()
+    .replace(/^[\-\u2022\*]+\s*/g, '')
+    .replace(/^\d+\s+/g, '') // bỏ số đầu câu
+    .replace(/\b(2|hai)\s*(mẫu|sp|sản phẩm|mặt hàng|món)\b/g, ' ')
+    .replace(/\b(mẫu|sp|sản phẩm|mặt hàng|món)\b/g, ' ')
+    .replace(/\b(tai nghe|bàn phím|chuột|màn hình|laptop|phụ kiện)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!k) return null;
+
+  // 1) thử match từ list gần nhất
+  const fromList = pickFromListByKey(list, k);
+  if (fromList?.id) return fromList;
+
+  // 2) fallback: search db theo key (limit 1)
+  const rs = await search_products(supabase, {
+    q: k,
+    type: inferredType || '',
+    brand: inferredBrand || '',
+    min_price: 0,
+    max_price: 0,
+    limit: 5,
+    sort: 'newest',
+  });
+
+  if (rs.ok && rs.items.length > 0) {
+    // ưu tiên item có name chứa key nhất
+    const best =
+      rs.items.find((x: any) =>
+        String(x.name ?? '')
+          .toLowerCase()
+          .includes(k)
+      ) ?? rs.items[0];
+    return best;
+  }
+
+  return null;
 }
 
 // =====================
@@ -635,7 +744,11 @@ QUY TẮC:
 6) Nếu không có giới hạn giá: min_price=0 và max_price=0 (server hiểu 0 là không lọc giá).
 7) q phải NGẮN (từ khóa chính), KHÔNG đưa cả câu dài.
 8) KHÔNG được nói "đã chốt/đã thêm vào giỏ/đã thanh toán" nếu chưa gọi build_cart.
-9) Khi final có danh sách: tối đa 5 dòng, có số thứ tự + tên + giá. Kèm gợi ý chốt: "chốt mẫu #1 - 1 cái" hoặc "chốt <model> 2 cái và chốt <model> 1 cái".
+9) Khi final có danh sách: 
+- Tối đa 5 dòng, có số thứ tự + tên + giá. 
+- SAU danh sách PHẢI có 1 dòng trống (tức là dùng "\n\n"), rồi đến gợi ý chốt theo đúng 2 dòng: 
+Dòng 1: "Để chốt đơn bạn có thể nhắn:"
+Dòng 2: "Chốt mẫu #1 - 1 cái hoặc Chốt <model> 2 cái và chốt <model> 1 cái".
 10) Nếu user nói nhu cầu "văn phòng/gaming" thì ƯU TIÊN dùng tags=["office"] hoặc tags=["gaming"]; KHÔNG dùng q="laptop văn phòng" hay "laptop chơi game" như một cụm dài.
 `.trim();
 
@@ -738,7 +851,7 @@ export const POST: RequestHandler = async ({
     return json({
       ok: true,
       message:
-        'Chào bạn 👋 Mình là trợ lý mua sắm.\nBạn thử:\n- "bàn phím dưới 1 triệu"\n- "tư vấn bàn phím logitech"\n- "gợi ý laptop văn phòng"\n- "mặt hàng rẻ nhất" / "chốt rẻ nhất"\n- "chốt mẫu #1 1 cái"\n- "lấy 1 EK87 và 2 K380"',
+        'Chào bạn 👋 Mình là trợ lý mua sắm.\nBạn thử:\n- "tư vấn bàn phím dưới 1 triệu"\n- "tư vấn bàn phím logitech"\n- "gợi ý laptop văn phòng"\n- "mặt hàng rẻ nhất có ở shop" / "chốt mặt hàng rẻ nhất"\n- "chốt mẫu #1 - 1 cái"\n- "lấy 1 EK87 và 2 K380"',
     });
   }
 
@@ -790,6 +903,101 @@ export const POST: RequestHandler = async ({
   const budget = extractBudget(lastUserText);
   const inferredType = await inferTypeFromText(supabase, lastUserText);
   const inferredBrand = await inferBrandFromText(supabase, lastUserText);
+
+  // =====================
+  // (COMPARE) So sánh 2 sản phẩm (ưu tiên trước AI)
+  // =====================
+  console.log('COMPARE_RAW:', lastUserText);
+  console.log('COMPARE_PARSED:', extractCompareKeys(lastUserText));
+  if (isCompareIntent(lastUserText) && !isCheckoutIntent(lastUserText)) {
+    const { idxs, keys } = extractCompareKeys(lastUserText);
+
+    // CASE 1: so sánh theo #n (ví dụ: "so sánh #3 và #5")
+    if (idxs.length >= 2 && list.length) {
+      const a = list[idxs[0] - 1];
+      const b = list[idxs[1] - 1];
+
+      if (a?.id && b?.id) {
+        return json({
+          ok: true,
+          message:
+            `So sánh nhanh 2 sản phẩm:\n` +
+            `1) ${a.name} (${vnd(Number(a.price ?? 0))})\n` +
+            `   - Hãng: ${a.brand ?? '—'}\n` +
+            `   - Model: ${a.model ?? '—'}\n` +
+            `   - Loại: ${a.type ?? '—'}\n` +
+            `2) ${b.name} (${vnd(Number(b.price ?? 0))})\n` +
+            `   - Hãng: ${b.brand ?? '—'}\n` +
+            `   - Model: ${b.model ?? '—'}\n` +
+            `   - Loại: ${b.type ?? '—'}\n` +
+            `\n\nBạn có thể nói: "chốt mẫu #${idxs[0]} 1 cái" hoặc "chốt mẫu #${idxs[1]} 1 cái".`,
+          results: [a, b],
+        });
+      }
+
+      return json({
+        ok: true,
+        message:
+          'Mình không thấy đủ 2 mẫu theo # trong danh sách gần nhất. Bạn thử "tư vấn <loại hàng> ..." để mình ra list lại nhé.',
+      });
+    }
+
+    // CASE 2: so sánh theo tên/model (ví dụ: "JBL Tune 760NC và HyperX Cloud II")
+    if (keys.length >= 2) {
+      const a = await resolveCompareItem(
+        supabase,
+        list,
+        keys[0],
+        inferredType,
+        inferredBrand
+      );
+      const b = await resolveCompareItem(
+        supabase,
+        list,
+        keys[1],
+        inferredType,
+        inferredBrand
+      );
+
+      if (a?.id && b?.id) {
+        // (optional) lưu list để user chốt tiếp bằng #1 #2
+        lastSearchBySid.set(sid, [a, b]);
+
+        return json({
+          ok: true,
+          message:
+            `So sánh nhanh 2 sản phẩm:\n` +
+            `1) ${a.name} (${vnd(Number(a.price ?? 0))})\n` +
+            `   - Hãng: ${a.brand ?? '—'}\n` +
+            `   - Model: ${a.model ?? '—'}\n` +
+            `   - Loại: ${a.type ?? '—'}\n` +
+            `2) ${b.name} (${vnd(Number(b.price ?? 0))})\n` +
+            `   - Hãng: ${b.brand ?? '—'}\n` +
+            `   - Model: ${b.model ?? '—'}\n` +
+            `   - Loại: ${b.type ?? '—'}\n` +
+            `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "chốt mẫu #2 1 cái".`,
+          results: [a, b],
+        });
+      }
+
+      // nếu thiếu 1 trong 2
+      return json({
+        ok: true,
+        message:
+          `Mình chưa tìm đủ 2 sản phẩm để so sánh.` +
+          `\n- Mình thấy: ${a?.name ?? 'không thấy mẫu 1'}` +
+          `\n- Mình thấy: ${b?.name ?? 'không thấy mẫu 2'}` +
+          `\nBạn thử copy đúng tên sản phẩm trong danh sách gợi ý, hoặc dùng: "so sánh #3 và #5".`,
+        results: [a, b].filter(Boolean),
+      });
+    }
+
+    return json({
+      ok: true,
+      message:
+        'Bạn muốn so sánh 2 mẫu nào? Ví dụ: "so sánh #3 và #5" hoặc "so sánh JBL Tune 760NC và HyperX Cloud II".',
+    });
+  }
 
   // =====================
   // PRE-CHECKOUT deterministic (chốt chắc chắn)
@@ -848,6 +1056,7 @@ export const POST: RequestHandler = async ({
     if (list.length) {
       // Case 0: user nói chung chung "chốt 1 cái / lấy 1 cái" => pick #1 trong list gần nhất
       if (
+        isGenericCheckoutOnly(lastUserText) &&
         !/#\s*\d{1,2}/.test(lower) &&
         !hasModelToken(lower) &&
         /(chốt|mua|lấy|đặt|order|ấy\s+(cho|lấy|chốt))/i.test(lower)
@@ -877,6 +1086,67 @@ export const POST: RequestHandler = async ({
                 },
               ],
             });
+          }
+        }
+      }
+
+      // case 0.5 :)) checkout có tên sản phẩm nhưng không dùng # (vd: "lấy 1 HyperX Cloud,...")
+      if (
+        isCheckoutIntent(lastUserText) &&
+        !isGenericCheckoutOnly(lastUserText)
+      ) {
+        // cố bóc key như bạn đã làm cho multi-items
+        const wants = extractWantedItems(lastUserText);
+
+        // nếu parse ra được 1 key thì thử match list trước, không có thì search DB
+        if (wants.length === 1) {
+          const w = wants[0];
+
+          // 1) ưu tiên match trong list gần nhất
+          let pick = list.length ? pickFromListByKey(list, w.key) : null;
+
+          // 2) fallback: search DB theo key
+          if (!pick?.id) {
+            const rs = await search_products(supabase, {
+              q: w.key,
+              type: inferredType || '',
+              brand: inferredBrand || '',
+              min_price: 0,
+              max_price: 0,
+              limit: 5,
+              sort: 'newest',
+            });
+            if (rs.ok && rs.items.length > 0) pick = rs.items[0];
+          }
+
+          if (pick?.id) {
+            const built = await build_cart(supabase, {
+              items: [{ product_id: Number(pick.id), qty: Math.max(1, w.qty) }],
+            });
+
+            if (built?.ok && built?.cart) {
+              lastSearchBySid.set(sid, [pick]);
+              return json({
+                ok: true,
+                message: `OK, mình đã chốt ${pick.name} x${Math.max(
+                  1,
+                  w.qty
+                )}. Tổng tạm tính: ${vnd(built.cart.total)}`,
+                action: { type: 'cart', cart: built.cart, mode: 'replace' },
+                results: [
+                  {
+                    id: Number(pick.id),
+                    name: String(pick.name ?? ''),
+                    slug: String(pick.slug ?? ''),
+                    price: Number(pick.price ?? 0),
+                    image_url: pick.image_url ?? null,
+                    brand: pick.brand ?? null,
+                    model: pick.model ?? null,
+                    type: pick.type ?? null,
+                  },
+                ],
+              });
+            }
           }
         }
       }
@@ -1032,7 +1302,7 @@ export const POST: RequestHandler = async ({
         return json({
           ok: true,
           message:
-            'Bạn muốn chốt mẫu nào? Bạn có thể nói: "chốt mẫu #1 1 cái" hoặc "chốt <model> 2 cái".',
+            '\n\nBạn muốn chốt mẫu nào? Bạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "chốt <model> 2 cái".',
         });
       }
     }
@@ -1069,7 +1339,7 @@ export const POST: RequestHandler = async ({
             inferredType ? ` (${inferredType})` : ''
           }:\n` +
           formatList(rsByTags.items, 5) +
-          `\nBạn có thể nói: "chốt mẫu #1 1 cái" hoặc "tư vấn kỹ mẫu #2".`,
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "tư vấn kỹ mẫu #2".`,
         results: rsByTags.items.slice(0, 5),
       });
     }
@@ -1091,7 +1361,7 @@ export const POST: RequestHandler = async ({
         message:
           `Mình chưa đủ tags để lọc chuẩn 100%, nhưng đây là gợi ý theo mô tả "${tag}":\n` +
           formatList(rsByDesc.items, 5) +
-          `\nBạn có thể nói: "chốt mẫu #1 1 cái".`,
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái".`,
         results: rsByDesc.items.slice(0, 5),
       });
     }
@@ -1113,7 +1383,7 @@ export const POST: RequestHandler = async ({
           message:
             `Mình chưa lọc chính xác theo "${tag}", nhưng đây là vài gợi ý hiện có trong "${inferredType}":\n` +
             formatList(rs.items, 5) +
-            `\nBạn có thể nói: "lọc dưới 2 triệu" hoặc "chốt mẫu #1 1 cái".`,
+            `\n\nBạn có thể nói: "lọc dưới 2 triệu" hoặc "chốt mẫu #1 - 1 cái".`,
           results: rs.items.slice(0, 5),
         });
       }
@@ -1145,7 +1415,7 @@ export const POST: RequestHandler = async ({
             inferredType ? ` (${inferredType})` : ''
           }${inferredBrand ? ` - hãng ${inferredBrand}` : ''}:\n` +
           formatList(rs.items, 5) +
-          `\nBạn có thể nói: "chốt mẫu #1 1 cái" hoặc "lấy <model> 2 cái".`,
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "lấy <model> 2 cái".`,
         results: rs.items.slice(0, 5),
       });
     }
@@ -1185,7 +1455,7 @@ export const POST: RequestHandler = async ({
             `1. ${pick.name} - ${Number(pick.price).toLocaleString(
               'vi-VN'
             )} đồng\n` +
-            `Bạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 1 cái".`,
+            `\n\nBạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 - 1 cái".`,
           results: [pick],
         });
       }
@@ -1199,7 +1469,7 @@ export const POST: RequestHandler = async ({
               : 'Các sản phẩm đắt nhất'
           }${inferredType ? ` (${inferredType})` : ''}:\n` +
           formatList(rs.items, 5) +
-          `\nBạn có thể nói: "chốt mẫu #1 1 cái" hoặc "chốt rẻ nhất/đắt nhất".`,
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "chốt rẻ nhất/đắt nhất".`,
         results: rs.items.slice(0, 5),
       });
     }
@@ -1228,7 +1498,7 @@ export const POST: RequestHandler = async ({
           `1. ${pick.name} - ${Number(pick.price ?? 0).toLocaleString(
             'vi-VN'
           )} đồng\n` +
-          `Bạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 1 cái".`,
+          `\n\nBạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 - 1 cái".`,
         results: [pick],
       });
     }
@@ -1263,7 +1533,7 @@ export const POST: RequestHandler = async ({
             asc ? 'từ thấp đến cao' : 'từ cao đến thấp'
           }:\n` +
           formatList(rs.items, 5) +
-          `\nBạn có thể nói: "chốt mẫu #1 1 cái".`,
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái".`,
         results: rs.items.slice(0, 5),
       });
     }
