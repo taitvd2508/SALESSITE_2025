@@ -186,10 +186,10 @@
 </script>
 
 <!-- Floating button -->
-<div class="fixed bottom-5 right-5 z-[60]">
+<div class="fixed bottom-5 right-3 z-[60]">
   {#if !open}
     <button
-      class="h-12 w-12 rounded-full bg-primary text-white shadow-lg border border-[#2a3a58] hover:opacity-95 flex items-center justify-center"
+      class="h-16 w-16 rounded-full bg-primary text-white shadow-lg border border-[#2a3a58] hover:opacity-95 flex items-center justify-center"
       on:click={() => (open = true)}
       aria-label="Mở chatbot"
       title="Chatbot AI"
@@ -198,7 +198,7 @@
     </button>
   {:else}
     <div
-      class="w-[340px] sm:w-[380px] h-[520px] rounded-2xl bg-surface-dark border border-[#232f48] shadow-2xl overflow-hidden flex flex-col"
+      class="w-[340px] sm:w-[380px] h-[550px] rounded-2xl bg-surface-dark border border-[#232f48] shadow-2xl overflow-hidden flex flex-col"
     >
       <div
         class="px-4 py-3 border-b border-[#232f48] flex items-center justify-between"
@@ -241,7 +241,7 @@
                     >
                       <img
                         class="w-14 h-14 rounded-lg object-cover bg-[#0b1220]"
-                        src={p.image_url ?? '/placeholder.png'}
+                        src={p.image_url ?? '/images/placeholder-product.png'}
                         alt={p.name}
                         loading="lazy"
                       />
@@ -295,8 +295,8 @@
         </div>
 
         <div class="mt-2 text-[12px] text-gray-400">
-          Gợi ý: “tư vấn tai nghe dưới 500k”, “so sánh 2 sản phẩm”, “chốt đơn 2
-          cái”.
+          Gợi ý: “tư vấn bàn phím dưới 1 triệu”, “gợi ý mẫu laptop văn phòng”,
+          “chốt 1 cái &lt;tên model sản phẩm&gt;”.
         </div>
       </div>
     </div>
