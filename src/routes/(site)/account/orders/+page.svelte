@@ -48,6 +48,14 @@
   $: successCount = (data.orders ?? []).filter(
     (o) => (o.status?.code ?? '') === 'done'
   ).length;
+
+  // Track which orders are expanded to show all products
+  let expandedOrders: Record<number, boolean> = {};
+
+  function toggleExpand(orderId: number) {
+    expandedOrders[orderId] = !expandedOrders[orderId];
+    expandedOrders = expandedOrders; // trigger reactivity
+  }
 </script>
 
 <svelte:head>
@@ -341,10 +349,11 @@
 
               <div class="p-6">
                 {#if (o.order_details ?? []).length > 0}
-                  {#each (o.order_details ?? []).slice(0, 1) as it}
-                    <div class="flex gap-4 md:gap-6">
+                  <!-- Show first product always, or all if expanded -->
+                  {#each expandedOrders[o.id] ? (o.order_details ?? []) : (o.order_details ?? []).slice(0, 1) as it, idx}
+                    <div class="flex gap-4 md:gap-6 {idx > 0 ? 'mt-4 pt-4 border-t border-dashed border-[#324467]' : ''}">
                       <div
-                        class="shrink-0 size-24 md:size-32 bg-[#111722] rounded-lg border border-border-dark overflow-hidden flex items-center justify-center p-2"
+                        class="shrink-0 size-20 md:size-24 bg-[#111722] rounded-lg border border-border-dark overflow-hidden flex items-center justify-center p-2"
                       >
                         <img
                           class="object-contain w-full h-full mix-blend-screen"
@@ -357,11 +366,11 @@
                       >
                         <div>
                           <h3
-                            class="mb-1 text-lg font-bold text-white transition-colors group-hover:text-primary"
+                            class="mb-1 font-bold text-white transition-colors group-hover:text-primary {expandedOrders[o.id] ? 'text-base' : 'text-lg'}"
                           >
                             {it.product?.name ?? 'Sản phẩm'}
                           </h3>
-                          <p class="text-[#92a4c9] text-sm mb-2">
+                          <p class="text-[#92a4c9] text-sm mb-1">
                             {it.product?.brand ?? ''}{it.product?.type
                               ? ` • ${it.product.type}`
                               : ''}
@@ -370,8 +379,8 @@
                             x{it.quantity}
                           </p>
                         </div>
-                        <div class="mt-4 text-right md:mt-0">
-                          <p class="text-xl font-bold text-primary">
+                        <div class="mt-2 text-right md:mt-0">
+                          <p class="font-bold text-primary {expandedOrders[o.id] ? 'text-base' : 'text-xl'}">
                             {formatVND(it.price ?? it.product?.price)}
                           </p>
                         </div>
@@ -381,15 +390,19 @@
 
                   {#if (o.order_details ?? []).length > 1}
                     <div
-                      class="my-4 pt-4 border-t border-dashed border-[#324467] flex items-center justify-between text-xs text-[#92a4c9]"
+                      class="mt-4 pt-4 border-t border-dashed border-[#324467] flex items-center justify-between text-xs text-[#92a4c9]"
                     >
-                      <span
-                        >Và {(o.order_details ?? []).length - 1} sản phẩm khác</span
+                      {#if !expandedOrders[o.id]}
+                        <span>Và {(o.order_details ?? []).length - 1} sản phẩm khác</span>
+                      {:else}
+                        <span>Hiển thị tất cả {(o.order_details ?? []).length} sản phẩm</span>
+                      {/if}
+                      <button
+                        class="underline hover:text-white cursor-pointer"
+                        on:click={() => toggleExpand(o.id)}
                       >
-                      <a
-                        class="underline hover:text-white"
-                        href={`/account/orders/${o.id}`}>Xem tất cả</a
-                      >
+                        {expandedOrders[o.id] ? 'Thu gọn' : 'Xem tất cả'}
+                      </button>
                     </div>
                   {/if}
                 {/if}
