@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { supabase } from "$lib/supabase/client";
-  import { goto } from "$app/navigation";
-  import { invalidateAll } from "$app/navigation";
-  import { cart, mergeCartFromServer } from "$lib/stores/cart";
-  import { get } from "svelte/store";
+  import { supabase } from '$lib/supabase/client';
+  import { goto } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
+  import { cart, mergeCartFromServer } from '$lib/stores/cart';
+  import { get } from 'svelte/store';
 
   let email = '';
   let password = '';
@@ -14,14 +14,14 @@
 
   async function onSubmit(e: SubmitEvent) {
     e.preventDefault();
-    
+
     //capture redirect target FIRST before any async operations
-    const next = new URLSearchParams(window.location.search).get("next") ?? "/account";
-    
+    const next = new URLSearchParams(window.location.search).get('next');
+
     //check if local cart has items BEFORE login (to show notification only if user had items)
     const localCartHadItems = get(cart).items.length > 0;
-    
-    errorMsg = "";
+
+    errorMsg = '';
     loading = true;
 
     try {
@@ -36,10 +36,21 @@
           'Email not confirmed': 'Email chưa được xác nhận',
         };
         errorMsg = error
-          ? (AUTH_ERROR_MAP[error.message] ?? "Đăng nhập thất bại")
-          : "Không tạo được phiên đăng nhập";
+          ? (AUTH_ERROR_MAP[error.message] ?? 'Đăng nhập thất bại')
+          : 'Không tạo được phiên đăng nhập';
         return;
       }
+
+      const user = data.user;
+
+      // 🔑 LẤY ROLE
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const roleList = roles?.map((r) => r.role) ?? [];
+      const isAdmin = roleList.includes('admin') || roleList.includes('staff');
 
       // LINK guest session -> user. Ví dụ khi login thành công, nếu còn trong trình duyệt với session cũ thì sẽ tự map seesion với userId để update vào user_events
       try {
@@ -56,11 +67,18 @@
       const { merged, addedCount } = await mergeCartFromServer();
       if (merged && addedCount > 0 && localCartHadItems) {
         //store notification in sessionStorage to show on destination page
-        sessionStorage.setItem('cart_merge_notification', `Giỏ hàng đã được cập nhật (+${addedCount} sản phẩm)`);
+        sessionStorage.setItem(
+          'cart_merge_notification',
+          `Giỏ hàng đã được cập nhật (+${addedCount} sản phẩm)`
+        );
       }
 
-      await invalidateAll();
-      await goto(next);
+      // 🚦 REDIRECT
+      if (isAdmin) {
+        await goto('/admin', { replaceState: true });
+      } else {
+        await goto(next ?? '/account', { replaceState: true });
+      }
     } catch (err: any) {
       errorMsg = err?.message ?? 'Đăng nhập thất bại';
     } finally {

@@ -95,7 +95,9 @@
           class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-[#232f48] hover:text-white transition-colors"
         >
           <span class="text-xl material-symbols-outlined">home</span>
-          <p class="text-sm font-medium"><a href="/">Về trang bán hàng</a></p>
+          <p class="text-sm font-medium">
+            <a href="/" data-sveltekit-noscroll> Về trang bán hàng </a>
+          </p>
         </a>
         <div
           class="flex items-center gap-3 px-3 py-3 mt-2 border-t border-[#232f48]"

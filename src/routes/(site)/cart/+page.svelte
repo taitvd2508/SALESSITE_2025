@@ -8,7 +8,11 @@
   // Stock validation state
   let validating = false;
   let stockError = '';
-  let stockErrorItems: Array<{ name: string; requested: number; available: number }> = [];
+  let stockErrorItems: Array<{
+    name: string;
+    requested: number;
+    available: number;
+  }> = [];
 
   function coverOf(x: CartItem) {
     return x.image ?? '/images/placeholder-product.png';
@@ -77,9 +81,42 @@
 
   {#if items.length === 0}
     <div
-      class="bg-surface-dark border border-[#232f48] rounded-xl p-6 text-[#92a4c9]"
+      class="bg-surface-dark border border-[#232f48] rounded-xl p-8 text-[#92a4c9]
+         flex flex-col md:flex-row items-center justify-between gap-6"
     >
-      Giỏ hàng đang trống. Hãy thêm vài sản phẩm nhé.
+      <!-- Left content -->
+      <div class="max-w-md text-center md:text-left">
+        <h2 class="mb-2 text-xl font-semibold text-white">
+          Chưa có sản phẩm nào trong giỏ hàng
+        </h2>
+
+        <p class="mb-5 text-sm">
+          Cùng mua sắm hàng ngàn sản phẩm tại TT Store nhé!
+        </p>
+
+        <a
+          href="/products"
+          class="inline-flex items-center justify-center px-6 py-3 font-medium text-white transition rounded-lg bg-primary hover:bg-blue-600"
+        >
+          Mua ngay
+        </a>
+      </div>
+
+      <!-- Right image -->
+      <div class="flex-shrink-0">
+        <img
+          src="https://cdn2.fptshop.com.vn/unsafe/640x0/filters:format(webp):quality(75)/estore-v2/img/empty_cart.png"
+          srcset="
+        https://cdn2.fptshop.com.vn/unsafe/360x0/filters:format(webp):quality(75)/estore-v2/img/empty_cart.png 360w,
+        https://cdn2.fptshop.com.vn/unsafe/480x0/filters:format(webp):quality(75)/estore-v2/img/empty_cart.png 480w,
+        https://cdn2.fptshop.com.vn/unsafe/640x0/filters:format(webp):quality(75)/estore-v2/img/empty_cart.png 640w,
+        https://cdn2.fptshop.com.vn/unsafe/1080x0/filters:format(webp):quality(75)/estore-v2/img/empty_cart.png 1080w
+      "
+          sizes="(max-width: 768px) 70vw, 360px"
+          alt="Giỏ hàng trống"
+          class="w-[260px] md:w-[320px]"
+        />
+      </div>
     </div>
   {:else}
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
@@ -187,10 +224,12 @@
           </button>
 
           {#if stockError}
-            <div class="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+            <div
+              class="p-4 mt-4 border rounded-lg bg-red-500/10 border-red-500/30"
+            >
               <p class="text-sm font-medium text-red-400">{stockError}</p>
               {#if stockErrorItems.length > 0}
-                <ul class="mt-2 text-sm text-red-300 space-y-1">
+                <ul class="mt-2 space-y-1 text-sm text-red-300">
                   {#each stockErrorItems as item}
                     <li>
                       • {item.name}: chỉ còn {item.available} sản phẩm
