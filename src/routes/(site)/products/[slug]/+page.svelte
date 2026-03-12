@@ -41,24 +41,16 @@
   $: cover =
     images?.[selectedIndex] ?? images?.[0] ?? '/images/placeholder-product.png';
 
-  //cart quantity sync - read the current quantity of this product in cart
-  $: cartQty =
-    $cart.items.find((x) => x.product_id === productId)?.quantity ?? 0;
+  //local quantity selector (does NOT touch the cart)
+  let selectedQty = 1;
   $: maxQty = product?.quantity ?? 1;
 
-  function incCartQty() {
-    if (!productId) return;
-    if (cartQty === 0) {
-      //first add
-      addToCart();
-    } else if (cartQty < maxQty) {
-      cart.inc(productId);
-    }
+  function incQty() {
+    if (selectedQty < maxQty) selectedQty += 1;
   }
 
-  function decCartQty() {
-    if (!productId || cartQty <= 0) return;
-    cart.dec(productId);
+  function decQty() {
+    if (selectedQty > 1) selectedQty -= 1;
   }
 
   function vnd(n: number) {
@@ -130,7 +122,7 @@
     };
   }
 
-  //add đúng sản phẩm đang xem
+  //add đúng sản phẩm đang xem với số lượng đã chọn
   async function addToCart() {
     //block admin from shopping
     if (isAdmin) {
@@ -141,12 +133,23 @@
     const p = data?.product;
     if (!p?.id) return;
 
-    //only add if not already in cart (quantity controls handle incrementing)
-    if (cartQty === 0) {
-      cart.add(toCartItem(p), 1);
+    const pid = Number(p.id);
+    const currentCartQty =
+      $cart.items.find((x) => x.product_id === pid)?.quantity ?? 0;
+
+    if (currentCartQty === 0) {
+      //first time adding – use selectedQty
+      cart.add(toCartItem(p), selectedQty);
+    } else {
+      //already in cart – set to new selectedQty
+      const diff = selectedQty - currentCartQty;
+      if (diff > 0) {
+        for (let i = 0; i < diff; i++) cart.inc(pid);
+      } else if (diff < 0) {
+        for (let i = 0; i < -diff; i++) cart.dec(pid);
+      }
     }
 
-    const pid = Number(p.id);
     const key = `atc_${pid}`;
     const now = Date.now();
     const last = Number(sessionStorage.getItem(key) ?? '0');
@@ -171,7 +174,9 @@
     }
 
     showToast(
-      cartQty === 0 ? 'Đã thêm vào giỏ' : 'Cập nhật giỏ hànhg thành công'
+      currentCartQty === 0
+        ? 'Đã thêm vào giỏ'
+        : 'Cập nhật giỏ hàng thành công'
     );
   }
 
@@ -420,8 +425,8 @@
               <button
                 type="button"
                 class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-l-lg disabled:opacity-40"
-                on:click={decCartQty}
-                disabled={cartQty <= 0}
+                on:click={decQty}
+                disabled={selectedQty <= 1}
               >
                 <span class="text-sm material-symbols-outlined">remove</span>
               </button>
@@ -429,13 +434,13 @@
                 class="w-full h-full font-bold text-center text-white bg-transparent border-none focus:ring-0"
                 readonly
                 type="text"
-                value={cartQty}
+                value={selectedQty}
               />
               <button
                 type="button"
                 class="w-10 h-full flex items-center justify-center text-white hover:bg-[#232f48] rounded-r-lg disabled:opacity-40"
-                on:click={incCartQty}
-                disabled={cartQty >= maxQty}
+                on:click={incQty}
+                disabled={selectedQty >= maxQty}
               >
                 <span class="text-sm material-symbols-outlined">add</span>
               </button>
