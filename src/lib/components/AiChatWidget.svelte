@@ -33,6 +33,7 @@
   ];
 
   let listEl: HTMLDivElement | null = null;
+  let lastResultIds: number[] = [];
 
   async function scrollToBottom() {
     await tick();
@@ -99,7 +100,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages, lastResultIds }),
       });
 
       const out = await res.json();
@@ -131,6 +132,10 @@
             results,
           },
         ];
+        // Track result IDs for client-state session recovery
+        if (results.length > 0) {
+          lastResultIds = results.map((r) => r.id);
+        }
       }
 
       // If bot returns a cart action => add items to cart store
@@ -198,13 +203,13 @@
     </button>
   {:else}
     <div
-      class="w-[340px] sm:w-[380px] h-[550px] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100 overflow-hidden flex flex-col"
+      class="w-[680px] sm:w-[760px] h-[900px] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100 overflow-hidden flex flex-col"
     >
       <div
         class="px-4 py-3 border-b border-[#232f48] flex items-center justify-between"
       >
         <div class="font-bold text-white">
-          Chatbot AI - Hỗ trợ tư vấn & đặt hàng
+          Chatbot AI - Hỗ trợ tư vấn &amp; đặt hàng
         </div>
         <button
           class="text-gray-300 hover:text-white"
@@ -295,8 +300,8 @@
         </div>
 
         <div class="mt-2 text-[12px] text-gray-400">
-          Gợi ý: “tư vấn bàn phím dưới 1 triệu”, “gợi ý mẫu laptop văn phòng”,
-          “chốt 1 cái &lt;tên model sản phẩm&gt;”.
+          Gợi ý: "tư vấn bàn phím dưới 1 triệu", "gợi ý mẫu laptop văn phòng",
+          "chốt 1 cái &lt;tên model sản phẩm&gt;".
         </div>
       </div>
     </div>

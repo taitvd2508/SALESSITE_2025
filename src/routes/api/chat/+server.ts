@@ -41,8 +41,8 @@ function formatList(items: any[], max = 5) {
     .map(
       (p: any, i: number) =>
         `${i + 1}. ${p.name} - ${Number(p.price ?? 0).toLocaleString(
-          'vi-VN'
-        )} đồng`
+          'vi-VN',
+        )} đồng`,
     )
     .join('\n');
 }
@@ -53,7 +53,7 @@ function cleanQuery(q: string) {
     .toLowerCase()
     .replace(
       /\b(tư vấn|gợi ý|cho tôi|cho mình|giúp tôi|mẫu|sản phẩm|sp|có giá|dưới|trên|tầm|loại|dòng|một|1|vài|giùm|dùm|với|nhé)\b/g,
-      ' '
+      ' ',
     )
     .replace(/\s+/g, ' ')
     .trim();
@@ -66,6 +66,16 @@ function safeIlikeToken(s: string) {
     .replace(/[,]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Bỏ dấu tiếng Việt để fuzzy match
+function removeDiacritics(s: string) {
+  return (s ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
 }
 
 function isGreeting(text: string) {
@@ -110,10 +120,10 @@ function extractBudget(text: string): { min: number; max: number } {
 
   const range =
     t.match(
-      /từ\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)\s+đến\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)/i
+      /từ\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)\s+đến\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)/i,
     ) ||
     t.match(
-      /([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)\s*-\s*([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)/i
+      /([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)\s*-\s*([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu)?)/i,
     );
 
   if (range) {
@@ -125,7 +135,7 @@ function extractBudget(text: string): { min: number; max: number } {
   }
 
   const under = t.match(
-    /dưới\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu))/i
+    /dưới\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu))/i,
   );
   if (under) {
     const max = parseMoneyToken(under[1]) ?? 0;
@@ -133,7 +143,7 @@ function extractBudget(text: string): { min: number; max: number } {
   }
 
   const above = t.match(
-    /trên\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu))/i
+    /trên\s+([0-9.,]+\s*(?:k|nghìn|nghin|tr|triệu|trieu))/i,
   );
   if (above) {
     const min = parseMoneyToken(above[1]) ?? 0;
@@ -149,7 +159,7 @@ function extractBudget(text: string): { min: number; max: number } {
 function isCheckoutIntent(text: string) {
   const t = (text ?? '').toLowerCase();
   return /(chốt|mua|lấy|đặt|order|thêm vào giỏ|add to cart|giỏ hàng|thanh toán|lấy cho|chốt cho|ấy\s+(cho|lấy|chốt))/i.test(
-    t
+    t,
   );
 }
 
@@ -159,7 +169,7 @@ function isGenericCheckoutOnly(text: string) {
   // chấp nhận: "chốt 1 cái", "lấy 1 cái", "mua 1 cái", "chốt giúp tôi 1 cái"
   // KHÔNG chấp nhận: "lấy 1 HyperX Cloud", "chốt k380", ...
   return /^(?:chốt|lấy|mua|đặt|order)(?:\s+giúp|\s+cho\s+(?:tôi|mình))?(?:\s+\d{1,2}|\s+một)?(?:\s*(?:cái|chiếc|sp|sản phẩm))?\s*$/i.test(
-    t
+    t,
   );
 }
 
@@ -169,7 +179,7 @@ function looksLikeSelectingFromList(text: string) {
   if (/#\s*\d{1,2}/.test(t)) return true;
   if (
     /(mẫu này|cái này|cái trên|con này|lấy luôn|chốt luôn|mẫu đó|cái đó|cái đầu|mẫu đầu|đầu tiên)/.test(
-      t
+      t,
     )
   )
     return true;
@@ -241,7 +251,7 @@ async function resolveCompareItem(
   list: any[],
   key: string,
   inferredType: string,
-  inferredBrand: string
+  inferredBrand: string,
 ) {
   const k = (key ?? '')
     .toLowerCase()
@@ -275,7 +285,7 @@ async function resolveCompareItem(
       rs.items.find((x: any) =>
         String(x.name ?? '')
           .toLowerCase()
-          .includes(k)
+          .includes(k),
       ) ?? rs.items[0];
     return best;
   }
@@ -312,7 +322,7 @@ function extractWantedItems(text: string) {
 
     if (!qtyX) {
       const qtyUnit = p.match(
-        /(?<![a-zA-Z])(\d{1,2})(?!\d)\s*(cái|chiếc|sp|sản phẩm)\b/i
+        /(?<![a-zA-Z])(\d{1,2})(?!\d)\s*(cái|chiếc|sp|sản phẩm)\b/i,
       );
       if (qtyUnit) qty = Math.max(1, Number(qtyUnit[1]));
     }
@@ -347,19 +357,19 @@ function pickFromListByKey(list: any[], key: string) {
   const k = (key ?? '').toLowerCase().trim();
   if (!k) return null;
 
-  const byModel = list.find((p) => String(p.model ?? '').toLowerCase() === k);
-  if (byModel) return byModel;
-
+  // 1) exact slug match
   const bySlug = list.find((p) => String(p.slug ?? '').toLowerCase() === k);
   if (bySlug) return bySlug;
 
+  // 2) name contains key
   const byName = list.find((p) =>
     String(p.name ?? '')
       .toLowerCase()
-      .includes(k)
+      .includes(k),
   );
   if (byName) return byName;
 
+  // 3) name normalized (compact spaces)
   const compact = k.replace(/\s+/g, ' ');
   const byName2 = list.find((p) => {
     const nm = String(p.name ?? '')
@@ -367,8 +377,33 @@ function pickFromListByKey(list: any[], key: string) {
       .replace(/\s+/g, ' ');
     return nm.includes(compact);
   });
+  if (byName2) return byName2;
 
-  return byName2 ?? null;
+  // 4) fuzzy: bỏ dấu tiếng Việt rồi so
+  const kNoDiac = removeDiacritics(k);
+  const byFuzzy = list.find((p) => {
+    const nm = removeDiacritics(p.name ?? '');
+    return nm.includes(kNoDiac);
+  });
+  if (byFuzzy) return byFuzzy;
+
+  // 5) slug contains key (partial)
+  const bySlugPartial = list.find((p) =>
+    String(p.slug ?? '')
+      .toLowerCase()
+      .includes(k.replace(/\s+/g, '-')),
+  );
+  if (bySlugPartial) return bySlugPartial;
+
+  // 6) brand contains key
+  const byBrand = list.find((p) =>
+    String(p.brand ?? '')
+      .toLowerCase()
+      .includes(k),
+  );
+  if (byBrand) return byBrand;
+
+  return null;
 }
 
 // =====================
@@ -397,8 +432,8 @@ async function getTypesCached(supabase: any): Promise<string[]> {
     new Set(
       (data ?? [])
         .map((x) => (x?.type ?? '').trim())
-        .filter((x) => x.length > 0)
-    )
+        .filter((x) => x.length > 0),
+    ),
   );
 
   cachedTypes = { ts: now, types };
@@ -424,8 +459,8 @@ async function getBrandsCached(supabase: any): Promise<string[]> {
     new Set(
       (data ?? [])
         .map((x) => (x?.brand ?? '').trim())
-        .filter((x) => x.length > 0)
-    )
+        .filter((x) => x.length > 0),
+    ),
   );
 
   brands.sort((a, b) => b.length - a.length);
@@ -449,7 +484,7 @@ async function inferTypeFromText(supabase: any, text: string) {
   for (const h of hints) {
     if (h.keys.test(t)) {
       const found = types.find((x) =>
-        String(x).toLowerCase().includes(h.typeLike)
+        String(x).toLowerCase().includes(h.typeLike),
       );
       if (found) return found;
       return h.typeLike.charAt(0).toUpperCase() + h.typeLike.slice(1);
@@ -488,7 +523,7 @@ async function search_products(
     max_price?: number;
     limit?: number;
     sort?: 'price_asc' | 'price_desc' | 'newest';
-  }
+  },
 ) {
   const limit = Math.min(Math.max(Number(args.limit ?? 10), 1), 20);
 
@@ -499,7 +534,7 @@ async function search_products(
     let query = supabase
       .from('products')
       .select(
-        'id,name,slug,brand,type,model,price,quantity,active,images,description,tags,created_at'
+        'id,name,slug,brand,type,model,price,quantity,active,images,description,tags,created_at',
       )
       .eq('active', true)
       .limit(limit);
@@ -526,13 +561,32 @@ async function search_products(
   if (args.q?.trim()) {
     const q0 = safeIlikeToken(cleanQuery(args.q.trim()));
     if (q0) {
-      const or = [
-        `name.ilike.%${q0}%`,
-        `model.ilike.%${q0}%`,
-        `brand.ilike.%${q0}%`,
-        `description.ilike.%${q0}%`,
-      ].join(',');
-      query = query.or(or);
+      // Multi-token AND search: "logitech k380" → phải match cả 2 token
+      const tokens = q0.split(/\s+/).filter((t) => t.length >= 2);
+      if (tokens.length > 1) {
+        // Mỗi token phải xuất hiện ở ít nhất 1 field (AND giữa các token)
+        for (const token of tokens) {
+          const safeT = safeIlikeToken(token);
+          if (!safeT) continue;
+          query = query.or(
+            [
+              `name.ilike.%${safeT}%`,
+              `slug.ilike.%${safeT}%`,
+              `brand.ilike.%${safeT}%`,
+              `description.ilike.%${safeT}%`,
+            ].join(','),
+          );
+        }
+      } else {
+        // Single token: OR across multiple fields
+        const or = [
+          `name.ilike.%${q0}%`,
+          `slug.ilike.%${q0}%`,
+          `brand.ilike.%${q0}%`,
+          `description.ilike.%${q0}%`,
+        ].join(',');
+        query = query.or(or);
+      }
     }
   }
 
@@ -558,10 +612,10 @@ async function search_products(
         ? retry.or(
             [
               `name.ilike.%${q0}%`,
-              `model.ilike.%${q0}%`,
+              `slug.ilike.%${q0}%`,
               `brand.ilike.%${q0}%`,
               `description.ilike.%${q0}%`,
-            ].join(',')
+            ].join(','),
           )
         : retry;
 
@@ -611,7 +665,7 @@ async function get_product(supabase: any, args: { id: number }) {
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id,name,slug,brand,type,model,price,old_price,quantity,active,images,description,tags'
+      'id,name,slug,brand,type,model,price,old_price,quantity,active,images,description,tags',
     )
     .eq('id', id)
     .maybeSingle();
@@ -624,7 +678,7 @@ async function get_product(supabase: any, args: { id: number }) {
 
 async function build_cart(
   supabase: any,
-  args: { items: Array<{ product_id: number; qty: number }> }
+  args: { items: Array<{ product_id: number; qty: number }> },
 ) {
   const items = Array.isArray(args.items) ? args.items : [];
   const normalized = items
@@ -646,7 +700,7 @@ async function build_cart(
   if (error) return { ok: false, error: error.message };
 
   const map = new Map<number, any>(
-    (data ?? []).map((p: any) => [Number(p.id), p])
+    (data ?? []).map((p: any) => [Number(p.id), p]),
   );
   const cartItems: any[] = [];
   let total = 0;
@@ -679,9 +733,12 @@ async function build_cart(
 // =====================
 // Groq call (OpenAI-compatible)
 // =====================
-async function groqChat(messages: any[]) {
+async function groqChat(messages: any[], useJson = true) {
   if (!GROQ_API_KEY) throw new Error('Missing GROQ_API_KEY');
   const model = (GROQ_MODEL || 'llama-3.3-70b-versatile').trim();
+
+  const body: any = { model, temperature: 0.4, messages };
+  if (useJson) body.response_format = { type: 'json_object' };
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -689,17 +746,63 @@ async function groqChat(messages: any[]) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${GROQ_API_KEY}`,
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-      messages,
-    }),
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
   if (!res.ok) throw new Error(`Groq error ${res.status}: ${text}`);
   return JSON.parse(text);
+}
+
+// =====================
+// AI Compare Summary
+// =====================
+async function generateCompareSummary(a: any, b: any): Promise<string> {
+  try {
+    const prompt = `Bạn là chuyên gia tư vấn công nghệ Việt Nam. So sánh 2 sản phẩm sau dựa HOÀN TOÀN vào data có sẵn, KHÔNG bịa thông tin.
+
+Sản phẩm 1: ${a.name}
+- Giá: ${Number(a.price ?? 0).toLocaleString('vi-VN')} đ
+- Hãng: ${a.brand ?? 'Không rõ'}
+- Loại: ${a.type ?? 'Không rõ'}
+- Mô tả: ${a.description ?? 'Không có'}
+- Tags: ${Array.isArray(a.tags) ? a.tags.join(', ') : 'Không có'}
+
+Sản phẩm 2: ${b.name}
+- Giá: ${Number(b.price ?? 0).toLocaleString('vi-VN')} đ
+- Hãng: ${b.brand ?? 'Không rõ'}
+- Loại: ${b.type ?? 'Không rõ'}
+- Mô tả: ${b.description ?? 'Không có'}
+- Tags: ${Array.isArray(b.tags) ? b.tags.join(', ') : 'Không có'}
+
+Hãy trả lời NGẮN GỌN (tối đa 8 dòng), bằng tiếng Việt, gồm:
+1. Điểm mạnh chính mỗi mẫu (1-2 dòng mỗi mẫu)
+2. Khác biệt nổi bật
+3. Gợi ý: mẫu nào hợp với ai (gaming/office/tầm giá...)
+
+KHÔNG dùng markdown heading, chỉ dùng text thường + gạch đầu dòng.`;
+
+    const resp = await groqChat([{ role: 'user', content: prompt }], false);
+    const content = resp?.choices?.[0]?.message?.content ?? '';
+    return content.trim();
+  } catch {
+    return '';
+  }
+}
+
+// =====================
+// Fetch full product for compare (with description + tags)
+// =====================
+async function fetchFullProduct(supabase: any, id: number) {
+  const { data } = await supabase
+    .from('products')
+    .select(
+      'id,name,slug,brand,type,price,old_price,quantity,active,images,description,tags',
+    )
+    .eq('id', id)
+    .eq('active', true)
+    .maybeSingle();
+  return data;
 }
 
 function safeJsonParse(s: string) {
@@ -758,13 +861,13 @@ Dòng 2: "Chốt mẫu #1 - 1 cái hoặc Chốt <model> 2 cái và chốt <mode
 function wantCheapest(text: string) {
   const t = (text ?? '').toLowerCase();
   return /(rẻ nhất|re nhat|giá thấp nhất|gia thap nhat|thấp nhất|thap nhat)/.test(
-    t
+    t,
   );
 }
 function wantMostExpensive(text: string) {
   const t = (text ?? '').toLowerCase();
-  return /(đắt nhất|dat nhat|giá cao nhất|gia cao nhat|cao nhất|cao nhat)/.test(
-    t
+  return /(đắt nhất|dat nhat|giá cao nhất|gia cao nhat|cao nhất|cao nhat|mắc nhất|mac nhat)/.test(
+    t,
   );
 }
 function wantRandom(text: string) {
@@ -782,13 +885,13 @@ function wantSingleItem(text: string) {
 function wantSortedList(text: string) {
   const t = (text ?? '').toLowerCase();
   return /(từ thấp đến cao|tu thap den cao|từ cao đến thấp|tu cao den thap|sắp xếp|sap xep|list|lên đơn|len don)/.test(
-    t
+    t,
   );
 }
 function needOffice(text: string) {
   const t = (text ?? '').toLowerCase();
   return /(văn phòng|van phong|làm việc|lam viec|office|học tập|hoc tap)/.test(
-    t
+    t,
   );
 }
 function needGaming(text: string) {
@@ -801,6 +904,28 @@ function isAdviceIntent(text: string) {
 }
 function hasModelToken(text: string) {
   return /\b[a-z]{1,8}\d{2,5}[a-z]?\b/i.test(text ?? '');
+}
+function needProgramming(text: string) {
+  const t = (text ?? '').toLowerCase();
+  return /(lập trình|lap trinh|code|coding|developer|dev|programming)/.test(t);
+}
+function wantPremium(text: string) {
+  const t = (text ?? '').toLowerCase();
+  return /(cao cấp|cao cap|premium|high-end|highend|sang|xịn|flagship)/.test(t);
+}
+function wantAffordable(text: string) {
+  const t = (text ?? '').toLowerCase();
+  // Không match "rẻ nhất" (để wantCheapest xử lý)
+  if (wantCheapest(text) || wantMostExpensive(text)) return false;
+  return /(phải chăng|phai chang|tầm trung|tam trung|bình dân|binh dan|rẻ|re|giá tốt|gia tot|tiết kiệm|tiet kiem)/.test(
+    t,
+  );
+}
+function isTrendingIntent(text: string) {
+  const t = (text ?? '').toLowerCase();
+  return /(hot|trending|bán chạy|ban chay|phổ biến|pho bien|xu hướng|xu huong|nhiều người mua|nhieu nguoi mua|có gì hay|co gi hay|có gì mới|co gi moi|nổi bật|noi bat)/.test(
+    t,
+  );
 }
 
 // =====================
@@ -824,7 +949,7 @@ export const POST: RequestHandler = async ({
   if (!Array.isArray(messages) || messages.length === 0) {
     return json(
       { ok: false, error: 'messages[] is required' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -833,18 +958,59 @@ export const POST: RequestHandler = async ({
   if (!supabase) {
     return json(
       { ok: false, error: 'Server supabase client not found in locals' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
   // 3) sid
   const sid = cookies.get('tt_sid') ?? 'anon';
 
+  // 3.5) Client-state: nhận lastResultIds từ frontend (giảm phụ thuộc in-memory)
+  const clientResultIds: number[] = Array.isArray(body?.lastResultIds)
+    ? body.lastResultIds
+        .filter((id: any) => Number.isFinite(Number(id)))
+        .map(Number)
+    : [];
+
   // 4) last user text
   const lastUserText =
     [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
   const t = lastUserText.trim().toLowerCase();
-  const list = lastSearchBySid.get(sid) ?? [];
+  let list = lastSearchBySid.get(sid) ?? [];
+
+  // Nếu in-memory trống nhưng client gửi lastResultIds → resolve từ DB
+  if (list.length === 0 && clientResultIds.length > 0) {
+    try {
+      const { data: clientProducts } = await supabase
+        .from('products')
+        .select('id,name,slug,brand,type,price,quantity,active,images')
+        .in('id', clientResultIds)
+        .eq('active', true);
+      if (clientProducts?.length) {
+        // Giữ thứ tự theo clientResultIds
+        const pMap = new Map(
+          (clientProducts as any[]).map((p: any) => [Number(p.id), p]),
+        );
+        list = clientResultIds
+          .map((id) => pMap.get(id))
+          .filter(Boolean)
+          .map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            brand: p.brand,
+            type: p.type,
+            price: Number(p.price ?? 0),
+            quantity: p.quantity,
+            image_url:
+              Array.isArray(p.images) && p.images.length > 0
+                ? p.images[0]
+                : null,
+          }));
+        lastSearchBySid.set(sid, list);
+      }
+    } catch {}
+  }
 
   // greeting
   if (isGreeting(lastUserText)) {
@@ -918,21 +1084,25 @@ export const POST: RequestHandler = async ({
       const b = list[idxs[1] - 1];
 
       if (a?.id && b?.id) {
-        return json({
-          ok: true,
-          message:
-            `So sánh nhanh 2 sản phẩm:\n` +
-            `1) ${a.name} (${vnd(Number(a.price ?? 0))})\n` +
-            `   - Hãng: ${a.brand ?? '—'}\n` +
-            `   - Model: ${a.model ?? '—'}\n` +
-            `   - Loại: ${a.type ?? '—'}\n` +
-            `2) ${b.name} (${vnd(Number(b.price ?? 0))})\n` +
-            `   - Hãng: ${b.brand ?? '—'}\n` +
-            `   - Model: ${b.model ?? '—'}\n` +
-            `   - Loại: ${b.type ?? '—'}\n` +
-            `\n\nBạn có thể nói: "chốt mẫu #${idxs[0]} 1 cái" hoặc "chốt mẫu #${idxs[1]} 1 cái".`,
-          results: [a, b],
-        });
+        // Fetch full product details for AI compare
+        const [fullA, fullB] = await Promise.all([
+          fetchFullProduct(supabase, Number(a.id)),
+          fetchFullProduct(supabase, Number(b.id)),
+        ]);
+        const aiSummary = await generateCompareSummary(fullA ?? a, fullB ?? b);
+
+        const basicInfo =
+          `🔍 So sánh 2 sản phẩm:\n` +
+          `1) ${a.name} (${vnd(Number(a.price ?? 0))}) - ${a.brand ?? ''} - ${a.type ?? ''}\n` +
+          `2) ${b.name} (${vnd(Number(b.price ?? 0))}) - ${b.brand ?? ''} - ${b.type ?? ''}\n`;
+
+        const message = aiSummary
+          ? basicInfo +
+            `\n${aiSummary}\n\nChốt đơn: "chốt mẫu #1" hoặc "chốt mẫu #2".`
+          : basicInfo +
+            `\nBạn có thể nói: "chốt mẫu #${idxs[0]} 1 cái" hoặc "chốt mẫu #${idxs[1]} 1 cái".`;
+
+        return json({ ok: true, message, results: [a, b] });
       }
 
       return json({
@@ -949,35 +1119,38 @@ export const POST: RequestHandler = async ({
         list,
         keys[0],
         inferredType,
-        inferredBrand
+        inferredBrand,
       );
       const b = await resolveCompareItem(
         supabase,
         list,
         keys[1],
         inferredType,
-        inferredBrand
+        inferredBrand,
       );
 
       if (a?.id && b?.id) {
-        // (optional) lưu list để user chốt tiếp bằng #1 #2
         lastSearchBySid.set(sid, [a, b]);
 
-        return json({
-          ok: true,
-          message:
-            `So sánh nhanh 2 sản phẩm:\n` +
-            `1) ${a.name} (${vnd(Number(a.price ?? 0))})\n` +
-            `   - Hãng: ${a.brand ?? '—'}\n` +
-            `   - Model: ${a.model ?? '—'}\n` +
-            `   - Loại: ${a.type ?? '—'}\n` +
-            `2) ${b.name} (${vnd(Number(b.price ?? 0))})\n` +
-            `   - Hãng: ${b.brand ?? '—'}\n` +
-            `   - Model: ${b.model ?? '—'}\n` +
-            `   - Loại: ${b.type ?? '—'}\n` +
-            `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "chốt mẫu #2 1 cái".`,
-          results: [a, b],
-        });
+        // Fetch full details + AI compare
+        const [fullA, fullB] = await Promise.all([
+          fetchFullProduct(supabase, Number(a.id)),
+          fetchFullProduct(supabase, Number(b.id)),
+        ]);
+        const aiSummary = await generateCompareSummary(fullA ?? a, fullB ?? b);
+
+        const basicInfo =
+          `🔍 So sánh 2 sản phẩm:\n` +
+          `1) ${a.name} (${vnd(Number(a.price ?? 0))}) - ${a.brand ?? ''} - ${a.type ?? ''}\n` +
+          `2) ${b.name} (${vnd(Number(b.price ?? 0))}) - ${b.brand ?? ''} - ${b.type ?? ''}\n`;
+
+        const message = aiSummary
+          ? basicInfo +
+            `\n${aiSummary}\n\nChốt đơn: "chốt mẫu #1" hoặc "chốt mẫu #2".`
+          : basicInfo +
+            `\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "chốt mẫu #2 1 cái".`;
+
+        return json({ ok: true, message, results: [a, b] });
       }
 
       // nếu thiếu 1 trong 2
@@ -1028,7 +1201,7 @@ export const POST: RequestHandler = async ({
           return json({
             ok: true,
             message: `OK, mình đã chốt ${pick.name} x1. Tổng tạm tính: ${vnd(
-              built.cart.total
+              built.cart.total,
             )}`,
             action: { type: 'cart', cart: built.cart, mode: 'replace' },
             results: [pick],
@@ -1046,7 +1219,7 @@ export const POST: RequestHandler = async ({
     // qty default: chỉ lấy khi có đơn vị hoặc xN
     let defaultQty = 1;
     const qtyUnit = lower.match(
-      /(?<![a-zA-Z])(\d{1,2})(?!\d)\s*(cái|chiếc|sp|sản phẩm)\b/i
+      /(?<![a-zA-Z])(\d{1,2})(?!\d)\s*(cái|chiếc|sp|sản phẩm)\b/i,
     );
     if (qtyUnit) defaultQty = Math.max(1, Number(qtyUnit[1]));
     const qtyX = lower.match(/\bx\s*(\d{1,2})\b/i);
@@ -1130,7 +1303,7 @@ export const POST: RequestHandler = async ({
                 ok: true,
                 message: `OK, mình đã chốt ${pick.name} x${Math.max(
                   1,
-                  w.qty
+                  w.qty,
                 )}. Tổng tạm tính: ${vnd(built.cart.total)}`,
                 action: { type: 'cart', cart: built.cart, mode: 'replace' },
                 results: [
@@ -1153,7 +1326,7 @@ export const POST: RequestHandler = async ({
 
       // Case 1: chốt theo #n,...
       const idxMatches = [...lower.matchAll(/#\s*(\d{1,2})/g)].map((m) =>
-        Number(m[1])
+        Number(m[1]),
       );
 
       // nếu có ít nhất 1 index
@@ -1208,12 +1381,12 @@ export const POST: RequestHandler = async ({
             return json({
               ok: true,
               message: `OK, mình đã chốt: ${summary}. Tổng tạm tính: ${vnd(
-                built.cart.total
+                built.cart.total,
               )}`,
               action: { type: 'cart', cart: built.cart, mode: 'replace' },
               results: pickedItems.map((x) => {
                 const p = list.find(
-                  (z) => Number(z.id) === Number(x.product_id)
+                  (z) => Number(z.id) === Number(x.product_id),
                 );
                 return {
                   id: Number(x.product_id),
@@ -1222,7 +1395,6 @@ export const POST: RequestHandler = async ({
                   price: Number(p?.price ?? 0),
                   image_url: p?.image_url ?? null,
                   brand: p?.brand ?? null,
-                  model: p?.model ?? null,
                   type: p?.type ?? null,
                 };
               }),
@@ -1239,7 +1411,7 @@ export const POST: RequestHandler = async ({
             message: `Mình chốt được: ${summary}. Nhưng không thấy mẫu: ${missingIdx
               .map((x) => `#${x}`)
               .join(
-                ', '
+                ', ',
               )} trong danh sách. Bạn muốn mình chốt phần tìm được trước không?`,
           });
         }
@@ -1272,11 +1444,9 @@ export const POST: RequestHandler = async ({
             const summary = picked.map((x) => `${x.name} x${x.qty}`).join(', ');
             return json({
               ok: true,
-              message: `OK, mình đã chốt: ${summary}. Tổng tạm tính: ${vnd(
-                built.cart.total
-              )}`,
+              message: `OK, mình đã chốt: ${summary}. Tổng tạm tính: ${vnd(built.cart.total)}`,
               action: { type: 'cart', cart: built.cart, mode: 'replace' },
-              results: picked.map((x) => ({ id: x.product_id, name: x.name })), // optional
+              results: picked.map((x) => ({ id: x.product_id, name: x.name })),
             });
           }
         }
@@ -1285,9 +1455,7 @@ export const POST: RequestHandler = async ({
           const summary = picked.map((x) => `${x.name} x${x.qty}`).join(', ');
           return json({
             ok: true,
-            message: `Mình chốt được: ${summary}. Nhưng chưa thấy "${missing.join(
-              ', '
-            )}" trong danh sách vừa tìm. Bạn muốn mình tìm thêm mẫu còn thiếu không?`,
+            message: `Mình chốt được: ${summary}. Nhưng chưa thấy "${missing.join(', ')}" trong danh sách vừa tìm. Bạn muốn mình tìm thêm mẫu còn thiếu không?`,
           });
         }
       }
@@ -1295,7 +1463,7 @@ export const POST: RequestHandler = async ({
       // Case 3: "mẫu này/cái này" khi list > 1
       if (
         /(mẫu này|cái này|cái trên|con này|mẫu đó|cái đó|cái đầu|mẫu đầu|đầu tiên)/.test(
-          lower
+          lastUserText.toLowerCase(),
         ) &&
         list.length > 1
       ) {
@@ -1311,6 +1479,105 @@ export const POST: RequestHandler = async ({
   // =====================
   // ROUTER (before AI): tư vấn/nhu cầu/rẻ nhất/ngẫu nhiên...
   // =====================
+
+  // (A0) Trending: "có gì hot", "bán chạy", "xu hướng"
+  if (isTrendingIntent(lastUserText) && !isCheckoutIntent(lastUserText)) {
+    try {
+      const { data: trendRows } = await supabase
+        .from('trending_products')
+        .select('product_id, score_30d')
+        .order('score_30d', { ascending: false })
+        .limit(10);
+      if (trendRows?.length) {
+        const trendIds = trendRows
+          .map((r: any) => Number(r.product_id))
+          .filter(Number.isFinite);
+        const { data: trendProds } = await supabase
+          .from('products')
+          .select('id,name,slug,brand,type,price,quantity,active,images')
+          .in('id', trendIds)
+          .eq('active', true);
+        if (trendProds?.length) {
+          const pMap = new Map(
+            (trendProds as any[]).map((p: any) => [Number(p.id), p]),
+          );
+          const sorted = trendIds
+            .map((id) => pMap.get(id))
+            .filter(Boolean)
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              slug: p.slug,
+              brand: p.brand,
+              type: p.type,
+              price: Number(p.price ?? 0),
+              quantity: p.quantity,
+              image_url:
+                Array.isArray(p.images) && p.images.length > 0
+                  ? p.images[0]
+                  : null,
+            }));
+          lastSearchBySid.set(sid, sorted);
+          return json({
+            ok: true,
+            message:
+              `🔥 Sản phẩm đang HOT nhất shop:\n` +
+              formatList(sorted, 5) +
+              `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "so sánh #1 và #2".`,
+            results: sorted.slice(0, 5),
+          });
+        }
+      }
+    } catch {}
+  }
+
+  // (A0.5) Programming / Premium / Affordable
+  if (
+    (needProgramming(lastUserText) ||
+      wantPremium(lastUserText) ||
+      wantAffordable(lastUserText)) &&
+    !isCheckoutIntent(lastUserText) &&
+    !needOffice(lastUserText) &&
+    !needGaming(lastUserText)
+  ) {
+    let tag = '';
+    let sortDir: 'price_asc' | 'price_desc' | 'newest' = 'newest';
+    let label = '';
+    if (needProgramming(lastUserText)) {
+      tag = 'gaming';
+      label = 'lập trình';
+      sortDir = 'price_asc';
+    } else if (wantPremium(lastUserText)) {
+      label = 'cao cấp';
+      sortDir = 'price_desc';
+    } else if (wantAffordable(lastUserText)) {
+      label = 'giá tốt';
+      sortDir = 'price_asc';
+      if (budget.max === 0 && budget.min === 0) budget.max = 5_000_000;
+    }
+
+    const rs = await search_products(supabase, {
+      q: '',
+      type: inferredType || '',
+      brand: inferredBrand || '',
+      tags: tag ? [tag] : [],
+      min_price: budget.min,
+      max_price: budget.max,
+      limit: 10,
+      sort: sortDir,
+    });
+    if (rs.ok && rs.items.length > 0) {
+      lastSearchBySid.set(sid, rs.items);
+      return json({
+        ok: true,
+        message:
+          `Gợi ý sản phẩm ${label}${inferredType ? ` (${inferredType})` : ''}${inferredBrand ? ` - ${inferredBrand}` : ''}:\n` +
+          formatList(rs.items, 5) +
+          `\n\nBạn có thể nói: "chốt mẫu #1 - 1 cái" hoặc "so sánh #1 và #2".`,
+        results: rs.items.slice(0, 5),
+      });
+    }
+  }
 
   // (A) Needs-based: office/gaming
   if (
@@ -1393,7 +1660,7 @@ export const POST: RequestHandler = async ({
   // (B) Advice: "tư vấn bàn phím", "tư vấn logitech", "tư vấn EK87"
   if (isAdviceIntent(lastUserText) && !isCheckoutIntent(lastUserText)) {
     const model = hasModelToken(lastUserText)
-      ? lastUserText.match(/\b[a-z]{1,8}\d{2,5}[a-z]?\b/i)?.[0] ?? ''
+      ? (lastUserText.match(/\b[a-z]{1,8}\d{2,5}[a-z]?\b/i)?.[0] ?? '')
       : '';
 
     const rs = await search_products(supabase, {
@@ -1425,8 +1692,8 @@ export const POST: RequestHandler = async ({
   const sortForExtreme = wantCheapest(lastUserText)
     ? 'price_asc'
     : wantMostExpensive(lastUserText)
-    ? 'price_desc'
-    : '';
+      ? 'price_desc'
+      : '';
 
   if (sortForExtreme && !isCheckoutIntent(lastUserText)) {
     const single = wantSingleItem(lastUserText);
@@ -1453,7 +1720,7 @@ export const POST: RequestHandler = async ({
               inferredType ? ` (${inferredType})` : ''
             }:\n` +
             `1. ${pick.name} - ${Number(pick.price).toLocaleString(
-              'vi-VN'
+              'vi-VN',
             )} đồng\n` +
             `\n\nBạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 - 1 cái".`,
           results: [pick],
@@ -1496,7 +1763,7 @@ export const POST: RequestHandler = async ({
         message:
           `Mình chọn ngẫu nhiên giúp bạn:\n` +
           `1. ${pick.name} - ${Number(pick.price ?? 0).toLocaleString(
-            'vi-VN'
+            'vi-VN',
           )} đồng\n` +
           `\n\nBạn có thể nói: "chốt 1 cái" hoặc "chốt mẫu #1 - 1 cái".`,
         results: [pick],
@@ -1511,11 +1778,17 @@ export const POST: RequestHandler = async ({
   }
 
   // (E) Sorted list request
-  if (wantSortedList(lastUserText) && !isCheckoutIntent(lastUserText)) {
+  if (
+    wantSortedList(lastUserText) &&
+    !isCheckoutIntent(lastUserText) &&
+    !wantCheapest(lastUserText) &&
+    !wantMostExpensive(lastUserText)
+  ) {
     const asc = /(thấp đến cao|thap den cao|giá thấp|gia thap)/.test(t);
 
+    // Tìm tất cả sản phẩm khi không có loại cụ thể
     const rs = await search_products(supabase, {
-      q: inferredType ? '' : cleanQuery(lastUserText),
+      q: '',
       type: inferredType || '',
       brand: inferredBrand || '',
       min_price: budget.min,
@@ -1633,6 +1906,6 @@ export const POST: RequestHandler = async ({
 
   return json(
     { ok: false, error: 'Tool loop exceeded', action: lastCartAction },
-    { status: 500 }
+    { status: 500 },
   );
 };
