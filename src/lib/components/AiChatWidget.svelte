@@ -203,7 +203,7 @@
     </button>
   {:else}
     <div
-      class="w-[680px] sm:w-[760px] h-[900px] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100 overflow-hidden flex flex-col"
+      class="w-[340px] sm:w-[460px] h-[600px] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100 overflow-hidden flex flex-col"
     >
       <div
         class="px-4 py-3 border-b border-[#232f48] flex items-center justify-between"

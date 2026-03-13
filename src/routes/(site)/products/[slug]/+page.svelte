@@ -10,7 +10,7 @@
   let toastType: 'success' | 'warning' = 'success';
 
   //check if user is admin (admins cannot shop)
-  $: isAdmin = $page.data.role === 'admin';
+  $: isAdmin = ($page.data.role ?? '').toString().toLowerCase() === 'admin';
   let toastTimer: any;
   const ATC_COOLDOWN_MS = 60_000; // 1P
 

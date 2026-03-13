@@ -6,7 +6,7 @@
   export let data: any;
 
   // admin không được mua
-  $: isAdmin = $page.data.role === 'admin';
+  $: isAdmin = ($page.data.role ?? '').toString().toLowerCase() === 'admin';
 
   let toast = '';
   let toastType: 'success' | 'warning' = 'success';
@@ -268,46 +268,47 @@
     {#if trending.length > 0}
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {#each trending as p}
-          <a
-            href={`/products/${p.slug}`}
-            class="group flex flex-col gap-4 rounded-lg p-3 hover:bg-[#1a2332] transition-colors border border-transparent hover:border-[#232f48]"
+          <div
+            class="group relative flex flex-col gap-4 rounded-lg p-3 hover:bg-[#1a2332] transition-colors border border-transparent hover:border-[#232f48]"
           >
-            <div
-              class="relative flex items-center justify-center w-full overflow-hidden rounded-lg aspect-square bg-surface-dark"
+            <a href={`/products/${p.slug}`} class="contents">
+              <div
+                class="relative flex items-center justify-center w-full overflow-hidden rounded-lg aspect-square bg-surface-dark"
+              >
+                <div
+                  class="w-full h-full transition-transform duration-500 bg-center bg-no-repeat bg-contain group-hover:scale-105"
+                  style={`background-image: url('${coverOf(p)}');`}
+                />
+              </div>
+
+              <div>
+                <p class="text-[#92a4c9] text-xs font-bold mb-1">
+                  {p.type ?? 'Sản phẩm'}
+                </p>
+                <div
+                  class="h-12 mb-2 font-medium text-white hover:text-primary line-clamp-2"
+                >
+                  {p.name}
+                </div>
+
+                <div class="flex items-end gap-2">
+                  <p class="font-bold text-white">{vnd(p.price ?? 0)}</p>
+                  {#if p.old_price && p.old_price > (p.price ?? 0)}
+                    <p class="text-[#92a4c9] text-xs line-through font-semibold">
+                      {vnd(p.old_price)}
+                    </p>
+                  {/if}
+                </div>
+              </div>
+            </a>
+            <button
+              class="absolute flex items-center justify-center w-10 h-10 text-white transition-opacity rounded-full shadow-lg opacity-0 bg-primary hover:bg-blue-600 bottom-[140px] right-6 group-hover:opacity-100 z-10"
+              type="button"
+              on:click|preventDefault|stopPropagation={() => addCardToCart(p)}
             >
-              <div
-                class="w-full h-full transition-transform duration-500 bg-center bg-no-repeat bg-contain group-hover:scale-105"
-                style={`background-image: url('${coverOf(p)}');`}
-              />
-              <button
-                class="absolute flex items-center justify-center w-10 h-10 text-white transition-opacity rounded-full shadow-lg opacity-0 bg-primary hover:bg-blue-600 bottom-3 right-3 group-hover:opacity-100"
-                type="button"
-                on:click|preventDefault|stopPropagation={() => addCardToCart(p)}
-              >
-                <span class="text-sm material-symbols-outlined">add</span>
-              </button>
-            </div>
-
-            <div>
-              <p class="text-[#92a4c9] text-xs font-bold mb-1">
-                {p.type ?? 'Sản phẩm'}
-              </p>
-              <div
-                class="h-12 mb-2 font-medium text-white hover:text-primary line-clamp-2"
-              >
-                {p.name}
-              </div>
-
-              <div class="flex items-end gap-2">
-                <p class="font-bold text-white">{vnd(p.price ?? 0)}</p>
-                {#if p.old_price && p.old_price > (p.price ?? 0)}
-                  <p class="text-[#92a4c9] text-xs line-through font-semibold">
-                    {vnd(p.old_price)}
-                  </p>
-                {/if}
-              </div>
-            </div>
-          </a>
+              <span class="text-sm material-symbols-outlined">add</span>
+            </button>
+          </div>
         {/each}
       </div>
     {:else}
@@ -390,49 +391,49 @@
       {#if forYou.length > 0}
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {#each forYou as p}
-            <a
-              href={`/products/${p.slug}`}
-              class="group flex flex-col gap-4 rounded-lg p-3 hover:bg-[#1a2332] transition-colors border border-transparent hover:border-[#232f48]"
+            <div
+              class="group relative flex flex-col gap-4 rounded-lg p-3 hover:bg-[#1a2332] transition-colors border border-transparent hover:border-[#232f48]"
             >
-              <div
-                class="relative flex items-center justify-center w-full overflow-hidden rounded-lg aspect-square bg-surface-dark"
+              <a href={`/products/${p.slug}`} class="contents">
+                <div
+                  class="relative flex items-center justify-center w-full overflow-hidden rounded-lg aspect-square bg-surface-dark"
+                >
+                  <div
+                    class="w-full h-full transition-transform duration-500 bg-center bg-no-repeat bg-contain group-hover:scale-105"
+                    style={`background-image: url('${coverOf(p)}');`}
+                  />
+                </div>
+
+                <div>
+                  <p class="text-[#92a4c9] text-xs font-bold mb-1">
+                    {p.type ?? 'Gợi ý'}
+                  </p>
+                  <div
+                    class="h-12 mb-2 font-medium text-white hover:text-primary line-clamp-2"
+                  >
+                    {p.name}
+                  </div>
+
+                  <div class="flex items-end gap-2">
+                    <p class="font-bold text-white">{vnd(p.price ?? 0)}</p>
+                    {#if p.old_price && p.old_price > (p.price ?? 0)}
+                      <p
+                        class="text-[#92a4c9] text-xs line-through font-semibold"
+                      >
+                        {vnd(p.old_price)}
+                      </p>
+                    {/if}
+                  </div>
+                </div>
+              </a>
+              <button
+                class="absolute flex items-center justify-center w-10 h-10 text-white transition-opacity rounded-full shadow-lg opacity-0 bg-primary hover:bg-blue-600 bottom-[140px] right-6 group-hover:opacity-100 z-10"
+                type="button"
+                on:click|preventDefault|stopPropagation={() => addCardToCart(p)}
               >
-                <div
-                  class="w-full h-full transition-transform duration-500 bg-center bg-no-repeat bg-contain group-hover:scale-105"
-                  style={`background-image: url('${coverOf(p)}');`}
-                />
-                <button
-                  class="absolute flex items-center justify-center w-10 h-10 text-white transition-opacity rounded-full shadow-lg opacity-0 bg-primary hover:bg-blue-600 bottom-3 right-3 group-hover:opacity-100"
-                  type="button"
-                  on:click|preventDefault|stopPropagation={() =>
-                    addCardToCart(p)}
-                >
-                  <span class="text-sm material-symbols-outlined">add</span>
-                </button>
-              </div>
-
-              <div>
-                <p class="text-[#92a4c9] text-xs font-bold mb-1">
-                  {p.type ?? 'Gợi ý'}
-                </p>
-                <div
-                  class="h-12 mb-2 font-medium text-white hover:text-primary line-clamp-2"
-                >
-                  {p.name}
-                </div>
-
-                <div class="flex items-end gap-2">
-                  <p class="font-bold text-white">{vnd(p.price ?? 0)}</p>
-                  {#if p.old_price && p.old_price > (p.price ?? 0)}
-                    <p
-                      class="text-[#92a4c9] text-xs line-through font-semibold"
-                    >
-                      {vnd(p.old_price)}
-                    </p>
-                  {/if}
-                </div>
-              </div>
-            </a>
+                <span class="text-sm material-symbols-outlined">add</span>
+              </button>
+            </div>
           {/each}
         </div>
       {:else}

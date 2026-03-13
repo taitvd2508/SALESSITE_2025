@@ -9,7 +9,7 @@
   let toastType: 'success' | 'warning' = 'success';
 
   //check if user is admin (admins cannot shop)
-  $: isAdmin = $page.data.role === 'admin';
+  $: isAdmin = ($page.data.role ?? '').toString().toLowerCase() === 'admin';
 
   function showToast(msg: string, type: 'success' | 'warning' = 'success') {
     toast = msg;
