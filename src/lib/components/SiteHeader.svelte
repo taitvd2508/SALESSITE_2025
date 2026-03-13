@@ -10,6 +10,48 @@
   import { supabase } from '$lib/supabase/client'; //bạn phải có file này
 
   let q = '';
+  let suggestions: Array<{
+    id: number; slug: string; name: string; brand: string;
+    type: string; price: number; old_price: number | null; image: string | null;
+  }> = [];
+  let showSuggestions = false;
+  let suggestTimer: any = null;
+  let searchFormEl: HTMLElement;
+
+  function onSearchInput() {
+    const text = q.trim();
+    if (text.length < 2) {
+      suggestions = [];
+      showSuggestions = false;
+      return;
+    }
+    clearTimeout(suggestTimer);
+    suggestTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search-suggest?q=${encodeURIComponent(text)}`);
+        const out = await res.json();
+        if (out?.ok && Array.isArray(out.items)) {
+          suggestions = out.items;
+          showSuggestions = suggestions.length > 0;
+        }
+      } catch {
+        suggestions = [];
+        showSuggestions = false;
+      }
+    }, 300);
+  }
+
+  function onSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      showSuggestions = false;
+    }
+  }
+
+  function handleClickOutside(e: MouseEvent) {
+    if (searchFormEl && !searchFormEl.contains(e.target as Node)) {
+      showSuggestions = false;
+    }
+  }
   $: pathname = $page.url.pathname;
 
   //auth data từ (site)/+layout.server.ts
@@ -246,6 +288,7 @@
 
   function onSearchSubmit(e: Event) {
     e.preventDefault();
+    showSuggestions = false;
     const query = q.trim();
     goto(query ? `/products?q=${encodeURIComponent(query)}` : '/products');
   }
@@ -274,6 +317,7 @@
   import { onMount } from 'svelte';
 
   onMount(() => {
+    document.addEventListener('click', handleClickOutside);
     const msg = sessionStorage.getItem('cart_merge_notification');
     if (msg) {
       cartMergeToast = msg;
@@ -304,7 +348,7 @@
 {/if}
 
 <header
-  class="w-full border-b border-[#232f48] bg-background-dark/95 backdrop-blur-md"
+  class="relative z-[100002] w-full border-b border-[#232f48] bg-background-dark/95 backdrop-blur-md"
 >
   <div class="mx-auto w-full max-w-[1200px] px-4 md:px-10 py-3">
     <div class="flex items-center justify-between gap-3">
@@ -324,6 +368,7 @@
 
       <!-- SEARCH FORM -->
       <form
+        bind:this={searchFormEl}
         class="w-full sm:flex-1 sm:max-w-[1000px]"
         on:submit={onSearchSubmit}
       >
@@ -334,10 +379,65 @@
           >
           <input
             bind:value={q}
+            on:input={onSearchInput}
+            on:focus={() => { if (suggestions.length > 0) showSuggestions = true; }}
+            on:keydown={onSearchKeydown}
             class="w-full rounded-lg border border-[#232f48] bg-[#121a2a] pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-[#92a4c9] focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="Tìm kiếm sản phẩm..."
             type="text"
+            autocomplete="off"
           />
+
+          <!-- Autocomplete dropdown -->
+          {#if showSuggestions && suggestions.length > 0}
+            <div
+              class="absolute left-0 right-0 top-full mt-1 z-[100001] rounded-xl border border-[#232f48] bg-[#1a2236] shadow-2xl overflow-hidden"
+              role="listbox"
+            >
+              <div class="px-3 py-2 text-xs font-semibold text-[#92a4c9] border-b border-[#232f48]">
+                Sản phẩm đề xuất
+              </div>
+              {#each suggestions as s, i}
+                <a
+                  href="/products/{s.slug}"
+                  class="flex items-center gap-3 px-3 py-2.5 hover:bg-[#232f48]/60 transition-colors"
+                  on:click={() => { showSuggestions = false; }}
+                >
+                  <img
+                    src={s.image ?? '/images/placeholder-product.png'}
+                    alt={s.name}
+                    class="w-10 h-10 object-contain rounded-lg bg-white shrink-0"
+                    loading="lazy"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-white truncate">{s.name}</div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold text-primary">
+                        {Number(s.price).toLocaleString('vi-VN')}₫
+                      </span>
+                      {#if s.old_price && s.old_price > s.price}
+                        <span class="text-[10px] text-[#92a4c9] line-through">
+                          {Number(s.old_price).toLocaleString('vi-VN')}₫
+                        </span>
+                        <span class="text-[10px] font-bold text-red-400">
+                          -{Math.round(((s.old_price - s.price) / s.old_price) * 100)}%
+                        </span>
+                      {/if}
+                    </div>
+                    <div class="text-[10px] text-[#92a4c9]">{s.brand} • {s.type}</div>
+                  </div>
+                </a>
+              {/each}
+              <a
+                href="/products?q={encodeURIComponent(q)}"
+                class="flex items-center justify-center gap-1 px-3 py-2.5 text-xs font-semibold text-primary border-t border-[#232f48] hover:bg-[#232f48]/60 transition-colors"
+                on:click={() => { showSuggestions = false; }}
+              >
+                Xem tất cả kết quả cho "{q}"
+                <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </a>
+            </div>
+          {/if}
         </div>
       </form>
     </div>

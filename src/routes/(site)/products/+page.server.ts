@@ -16,11 +16,11 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
   const pageSize = 21;
 
-	//parse min/max
-	const minStr = url.searchParams.get('min');
-	const maxStr = url.searchParams.get('max');
-	const min = minStr !== null && minStr !== '' ? Number(minStr) : null;
-	const max = maxStr !== null && maxStr !== '' ? Number(maxStr) : null;
+  //parse min/max
+  const minStr = url.searchParams.get('min');
+  const maxStr = url.searchParams.get('max');
+  const min = minStr !== null && minStr !== '' ? Number(minStr) : null;
+  const max = maxStr !== null && maxStr !== '' ? Number(maxStr) : null;
 
   const supabase = locals.supabase;
 
@@ -32,8 +32,19 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     )
     .eq('active', true);
 
-  //Search
-  if (q) query = query.ilike('name', `%${q}%`);
+  //Search: multi-field OR (name, slug, brand, description, tags)
+  if (q) {
+    const safeQ = q.replace(/[%_]/g, '');
+    const pattern = `%${safeQ}%`;
+    try {
+      query = query.or(
+        `name.ilike.${pattern},slug.ilike.${pattern},brand.ilike.${pattern},description.ilike.${pattern},tags.cs.{"${safeQ}"}`
+      );
+    } catch {
+      // Fallback: name-only search nếu .or() lỗi
+      query = query.ilike('name', pattern);
+    }
+  }
 
   //Filters
   if (type) query = query.eq('type', type);

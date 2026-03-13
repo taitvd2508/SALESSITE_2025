@@ -105,8 +105,8 @@
   let qInput = data.filters.q ?? '';
   let selectedType = data.filters.type ?? '';
   let selectedBrand = data.filters.brand ?? '';
-  let min = data.filters.min || '0';
-  let max = data.filters.max || '1000000000';
+  let min = data.filters.min || '';
+  let max = data.filters.max || '';
   let sort = data.filters.sort || 'newest';
 
   //Sync lại state khi URL/filter đổi -> server load trả về data.filters mới
@@ -117,9 +117,16 @@
 
     selectedType = data.filters.type ?? '';
     selectedBrand = data.filters.brand ?? '';
-    min = data.filters.min || '0';
-    max = data.filters.max || '1000000000';
     sort = data.filters.sort || 'newest';
+  }
+  // Tách riêng min/max: chỉ sync khi server trả về giá trị KHÁC với lần trước
+  let _prevMin = data.filters.min || '';
+  let _prevMax = data.filters.max || '';
+  $: {
+    const newMin = data.filters.min || '';
+    const newMax = data.filters.max || '';
+    if (newMin !== _prevMin) { min = newMin; _prevMin = newMin; }
+    if (newMax !== _prevMax) { max = newMax; _prevMax = newMax; }
   }
 
   $: totalPages = Math.max(
@@ -314,7 +321,7 @@
       <!-- Price Range -->
       <div class="bg-surface-dark rounded-xl p-5 border border-[#232f48]">
         <h3 class="mb-4 text-lg font-bold text-white">Khoảng giá</h3>
-        <div class="flex items-center gap-2 mb-4">
+        <div class="flex items-center gap-2 mb-3">
           <div class="relative w-full">
             <span
               class="absolute text-xs -translate-y-1/2 left-2 top-1/2 text-text-secondary"
@@ -322,9 +329,11 @@
             >
             <input
               class="w-full bg-[#101622] border border-[#232f48] rounded px-2 pl-4 py-1.5 text-xs text-white focus:border-primary focus:ring-0"
-              type="number"
+              type="text"
+              inputmode="numeric"
+              placeholder="Từ"
               bind:value={min}
-              on:change={applyFilters}
+              on:keydown={(e) => { if (e.key === 'Enter') applyFilters(); }}
             />
           </div>
           <span class="text-text-secondary">-</span>
@@ -335,12 +344,21 @@
             >
             <input
               class="w-full bg-[#101622] border border-[#232f48] rounded px-2 pl-4 py-1.5 text-xs text-white focus:border-primary focus:ring-0"
-              type="number"
+              type="text"
+              inputmode="numeric"
+              placeholder="Đến"
               bind:value={max}
-              on:change={applyFilters}
+              on:keydown={(e) => { if (e.key === 'Enter') applyFilters(); }}
             />
           </div>
         </div>
+        <button
+          type="button"
+          class="w-full py-1.5 text-xs font-semibold text-white rounded-lg bg-primary hover:bg-blue-600 transition"
+          on:click={applyFilters}
+        >
+          Áp dụng
+        </button>
       </div>
 
       <!-- Brands -->
