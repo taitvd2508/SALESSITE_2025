@@ -505,7 +505,7 @@
 
   {#if toast}
     <div
-      class="fixed top-3 right-24 z-[99999] border text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in flex items-center gap-2"
+      class="fixed top-20 right-24 z-[200000] border text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in flex items-center gap-2"
       class:bg-primary={toastType === 'success'}
       class:bg-amber-600={toastType === 'warning'}
     >

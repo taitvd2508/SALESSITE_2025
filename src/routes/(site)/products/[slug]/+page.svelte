@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { cart } from '$lib/stores/cart';
   import { marked } from 'marked';
 
@@ -178,6 +179,33 @@
         ? 'Đã thêm vào giỏ'
         : 'Cập nhật giỏ hàng thành công'
     );
+  }
+
+  // Mua ngay: add to cart + redirect checkout
+  async function buyNow() {
+    if (isAdmin) {
+      showToast('Vui lòng sử dụng tài khoản khác để mua hàng', 'warning');
+      return;
+    }
+    const p = data?.product;
+    if (!p?.id) return;
+
+    const pid = Number(p.id);
+    const currentCartQty =
+      $cart.items.find((x) => x.product_id === pid)?.quantity ?? 0;
+
+    if (currentCartQty === 0) {
+      cart.add(toCartItem(p), selectedQty);
+    } else {
+      const diff = selectedQty - currentCartQty;
+      if (diff > 0) {
+        for (let i = 0; i < diff; i++) cart.inc(pid);
+      } else if (diff < 0) {
+        for (let i = 0; i < -diff; i++) cart.dec(pid);
+      }
+    }
+
+    goto('/checkout');
   }
 
   //add đúng sản phẩm card (forYou/trending/similar)
@@ -459,6 +487,7 @@
           <button
             class="w-full text-lg font-bold text-white transition-colors rounded-lg shadow-lg h-14 bg-primary hover:bg-blue-600 shadow-blue-900/20"
             disabled={quantity <= 0}
+            on:click={buyNow}
           >
             Mua ngay
           </button>
@@ -685,7 +714,7 @@
   </div>
   {#if toast}
     <div
-      class="fixed top-3 right-24 z-[99999] border text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in flex items-center gap-2"
+      class="fixed top-20 right-24 z-[200000] border text-white px-4 py-2 rounded-lg shadow-xl shadow-black/40 animate-fade-in flex items-center gap-2"
       class:bg-primary={toastType === 'success'}
       class:bg-amber-600={toastType === 'warning'}
     >

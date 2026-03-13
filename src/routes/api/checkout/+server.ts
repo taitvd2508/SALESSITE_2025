@@ -235,6 +235,58 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, error: detErr.message }, { status: 500 });
   }
 
+  // 5B) Trừ tồn kho (atomic) — dùng RPC decrement_stock
+  const deductedItems: { product_id: number; quantity: number }[] = [];
+  let stockError = false;
+
+  for (const it of items) {
+    try {
+      const { data: affected, error: rpcErr } = await admin.rpc('decrement_stock', {
+        p_product_id: it.product_id,
+        p_qty: it.quantity,
+      });
+
+      if (rpcErr) {
+        console.error('decrement_stock RPC error:', rpcErr.message);
+        stockError = true;
+        break;
+      }
+
+      // affected = 0 nghĩa là không đủ hàng (WHERE quantity >= p_qty thất bại)
+      if (affected === 0) {
+        console.warn(`Hết hàng product_id=${it.product_id}, cần ${it.quantity}`);
+        stockError = true;
+        break;
+      }
+
+      deductedItems.push({ product_id: it.product_id, quantity: it.quantity });
+    } catch (e: any) {
+      console.error('decrement_stock exception:', e?.message);
+      stockError = true;
+      break;
+    }
+  }
+
+  // Rollback nếu trừ kho thất bại
+  if (stockError) {
+    // Hoàn trả các sản phẩm đã trừ
+    for (const d of deductedItems) {
+      try {
+        await admin.rpc('restore_stock', {
+          p_product_id: d.product_id,
+          p_qty: d.quantity,
+        });
+      } catch { /* best-effort restore */ }
+    }
+    // Xóa order_details + order
+    await admin.from('order_details').delete().eq('order_id', order.id);
+    await admin.from('orders').delete().eq('id', order.id);
+    return json(
+      { ok: false, error: 'Sản phẩm tạm thời không khả dụng, mong quý khách thứ lỗi' },
+      { status: 400 }
+    );
+  }
+
   // CHANGE 3) purchase events có user_id luôn (nếu có)
   const purchaseEvents = items.map((it) => ({
     session_id: sid,
